@@ -435,6 +435,62 @@
       color: #e878a8;
     }
 
+    /* 削除ボタン：通常は非表示、タスク行ホバー or 詳細展開中に表示 */
+    .delete-btn {
+      width: 26px;
+      height: 26px;
+      flex-shrink: 0;
+      background: none;
+      border: none;
+      padding: 0;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      border-radius: 50%;
+      color: #c8a0a8;
+      opacity: 0;
+      transition: opacity 0.18s, background 0.15s, color 0.15s, transform 0.12s;
+    }
+
+    /* ホバー中のタスク行 or 開いている詳細で削除ボタンを表示 */
+    .task-row:hover .delete-btn,
+    .task-item.open .delete-btn {
+      opacity: 1;
+    }
+
+    .delete-btn:hover {
+      background: #fde8e8;
+      color: #c84848;
+      transform: scale(1.12);
+    }
+
+    /* タッチデバイス（hover 非対応）では常時薄く表示 */
+    @media (hover: none) {
+      .delete-btn { opacity: 0.45; }
+    }
+
+    /* 削除時のフェードアウト */
+    .task-item.deleting {
+      animation: taskFadeOut 0.28s ease-out forwards;
+      pointer-events: none;
+      overflow: hidden;
+    }
+
+    @keyframes taskFadeOut {
+      0%   { opacity: 1; transform: translateX(0); }
+      100% { opacity: 0; transform: translateX(14px); }
+    }
+
+    /* 削除確認モーダルの確定ボタン */
+    .delete-confirm-btn {
+      background: linear-gradient(135deg, #e87272, #c84848) !important;
+      box-shadow: 0 2px 8px rgba(200,72,72,0.28) !important;
+    }
+
+    .delete-confirm-btn:hover { opacity: 0.88; }
+
     /* =====================================================
        TASK DETAIL (アコーディオン)
     ===================================================== */
@@ -904,6 +960,20 @@
 
 </div><!-- /.app -->
 
+<!-- ▼ タスク削除確認モーダル -->
+<div class="modal-overlay" id="deleteModal" style="display:none;" onclick="cancelDelete(event)">
+  <div class="modal-box" style="max-width:340px;" onclick="event.stopPropagation()">
+    <span class="modal-emoji">🗑️</span>
+    <div class="modal-title" style="font-size:16px;">タスクを削除しますか？</div>
+    <div class="modal-sub" id="deleteTaskLabel"
+      style="color:#5a3a4a; font-weight:600; font-size:14px; margin-bottom:20px;"></div>
+    <div class="modal-actions">
+      <button class="modal-cancel" onclick="cancelDelete()">キャンセル</button>
+      <button class="modal-confirm delete-confirm-btn" onclick="confirmDelete()">削除する</button>
+    </div>
+  </div>
+</div>
+
 <!-- ▼ 花束タイトル入力モーダル -->
 <div class="modal-overlay" id="bundleModal" style="display:none;" onclick="overlayClick(event)">
   <div class="modal-box" onclick="event.stopPropagation()">
@@ -1175,6 +1245,7 @@ function taskHtml(task, done) {
     <span class="task-name${done ? ' done' : ''}">${escHtml(task.title)}</span>
     ${dueDateChip}
     ${doneDateChip}
+    ${!done ? `<button class="delete-btn" onclick="showDeleteModal(event,'${task.id}')" title="削除">🗑️</button>` : ''}
     <button class="expand-btn" onclick="toggleTask(event,'${task.id}')" title="詳細を開閉">
       ${SVG_CHEVRON}
     </button>
@@ -1381,6 +1452,51 @@ function toggleTask(event, id) {
   if (item) flipTask(item);
 }
 
+// ── タスク削除 ──
+let pendingDeleteId = null;
+
+function showDeleteModal(event, id) {
+  event.stopPropagation();
+  const task = state.tasks.find(t => t.id === id && !t.completed);
+  if (!task) return;
+  pendingDeleteId = id;
+  document.getElementById('deleteTaskLabel').textContent = `「${task.title}」`;
+  document.getElementById('deleteModal').style.display = 'flex';
+}
+
+function cancelDelete(event) {
+  // オーバーレイ直クリック or ボタン押下で閉じる
+  if (event && event.target !== event.currentTarget) return;
+  pendingDeleteId = null;
+  document.getElementById('deleteModal').style.display = 'none';
+}
+
+function confirmDelete() {
+  document.getElementById('deleteModal').style.display = 'none';
+  const id = pendingDeleteId;
+  pendingDeleteId = null;
+  if (!id) return;
+
+  // フェードアウトアニメーションを再生してから削除
+  const item = document.querySelector(`#activeList .task-item[data-id="${id}"]`);
+  if (item) {
+    item.classList.add('deleting');
+    setTimeout(() => {
+      state.tasks = state.tasks.filter(t => t.id !== id);
+      openTasks.delete(id);
+      saveState();
+      renderActive();
+      renderHeader();
+    }, 290);
+  } else {
+    state.tasks = state.tasks.filter(t => t.id !== id);
+    openTasks.delete(id);
+    saveState();
+    renderActive();
+    renderHeader();
+  }
+}
+
 // ── 花束モーダル ──
 function showBundleModal() {
   const completed = state.tasks.filter(t => t.completed);
@@ -1464,4 +1580,3 @@ renderAll();
 </script>
 </body>
 </html>
-
