@@ -439,6 +439,66 @@
       border-color: #f5e0ea;
     }
 
+    /* ── 緊急度 絵文字（タスク行） ── */
+    .priority-emoji {
+      font-size: 13px;
+      flex-shrink: 0;
+      line-height: 1;
+      display: flex;
+      align-items: center;
+    }
+
+    /* ── 緊急度セレクター（詳細内） ── */
+    .priority-selector {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .priority-btn {
+      padding: 5px 13px;
+      border: 1.5px solid #ead0e0;
+      border-radius: 20px;
+      background: #fff;
+      font-size: 12px;
+      font-family: inherit;
+      cursor: pointer;
+      color: #6a4a6a;
+      transition: all 0.15s;
+      line-height: 1.4;
+    }
+
+    .priority-btn:hover     { border-color: #d090b8; background: #fff5fa; }
+    .priority-btn.act-high  { background: #ffe8e8; border-color: #e07070; color: #b83030; font-weight: 700; }
+    .priority-btn.act-mid   { background: #fff8e0; border-color: #cca030; color: #7a5a00; font-weight: 700; }
+    .priority-btn.act-low   { background: #eaf5ea; border-color: #70aa70; color: #2a6a2a; font-weight: 700; }
+    .priority-btn.act-none  { background: #f0f0f0; border-color: #c0c0c0; color: #666;    font-weight: 700; }
+
+    /* ── ソート切替ボタン（進行中ヘッダー内） ── */
+    .sort-toggle-btn {
+      font-size: 11px;
+      font-family: inherit;
+      font-weight: 600;
+      color: #b080a0;
+      background: #fce8f2;
+      border: 1px solid #f0c8dc;
+      border-radius: 20px;
+      padding: 4px 11px;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.15s;
+    }
+
+    .sort-toggle-btn:hover { background: #f8d8ea; color: #905070; }
+
+    .sort-toggle-btn.by-created {
+      background: #eef0f8;
+      border-color: #d0d4ee;
+      color: #7070a8;
+    }
+
+    .sort-toggle-btn.by-created:hover { background: #e4e8f5; color: #5050a0; }
+
     /* 詳細展開ボタン */
     .expand-btn {
       width: 24px;
@@ -957,6 +1017,7 @@
         <span class="section-head-title">🌿 進行中</span>
         <span class="count-badge" id="activeCount">0</span>
       </div>
+      <button class="sort-toggle-btn" id="sortToggleBtn" onclick="toggleSort()">優先度順 ↕</button>
     </div>
     <div id="activeList"></div>
   </div>
@@ -1031,6 +1092,13 @@
 // =============================================================
 const STORAGE_KEY  = 'taskBouquet_v1';
 const FLOWER_TYPES = ['🌸', '🌺', '🌼', '🌻', '🌷', '🌹', '🪷'];
+
+// 緊急度
+const PRIORITY_EMOJI  = { high: '🔴', mid: '🟡', low: '🟢' };
+const PRIORITY_ORDER  = { high: 1, mid: 2, low: 3, '': 4 };
+
+// ソート状態（'priority' or 'created'）
+let activeSort = 'priority';
 
 // SVG（外部依存ゼロ）
 const SVG_UNCHECKED = `<svg width="19" height="19" viewBox="0 0 19 19" fill="none">
@@ -1220,9 +1288,24 @@ function renderGarden() {
   }).join('');
 }
 
+// 進行中タスクをソートして返す
+function getSortedActive() {
+  const items = state.tasks.filter(t => !t.completed);
+  if (activeSort === 'priority') {
+    return [...items].sort((a, b) => {
+      const pa = PRIORITY_ORDER[a.priority || ''];
+      const pb = PRIORITY_ORDER[b.priority || ''];
+      if (pa !== pb) return pa - pb;
+      // 同じ優先度は作成日の新しい順
+      return new Date(b.createdAt) - new Date(a.createdAt);
+    });
+  }
+  return items; // 作成順（state.tasks への unshift 順）
+}
+
 // ── 進行中タスク ──
 function renderActive() {
-  const items = state.tasks.filter(t => !t.completed);
+  const items = getSortedActive();
   document.getElementById('activeCount').textContent = items.length;
   const el = document.getElementById('activeList');
 
@@ -1264,12 +1347,31 @@ function taskHtml(task, done) {
   const dueDateChip = !done && task.dueDate
     ? `<span class="due-date-chip">期日：${fmtDueDisplay(task.dueDate)}</span>` : '';
 
+  // 緊急度絵文字（未完了のみ）
+  const prioEmoji = !done && task.priority
+    ? `<span class="priority-emoji">${PRIORITY_EMOJI[task.priority] || ''}</span>` : '';
+
+  // 緊急度セレクター（詳細内・未完了のみ）
+  const prioSelector = !done ? `
+    <div class="detail-label">⚡ 緊急度</div>
+    <div class="priority-selector">
+      <button class="priority-btn ${task.priority === 'high' ? 'act-high' : ''}"
+        onclick="setPriority(event,'${task.id}','high')">🔴 高</button>
+      <button class="priority-btn ${task.priority === 'mid'  ? 'act-mid'  : ''}"
+        onclick="setPriority(event,'${task.id}','mid')">🟡 中</button>
+      <button class="priority-btn ${task.priority === 'low'  ? 'act-low'  : ''}"
+        onclick="setPriority(event,'${task.id}','low')">🟢 低</button>
+      <button class="priority-btn ${!task.priority ? 'act-none' : ''}"
+        onclick="setPriority(event,'${task.id}','')">― なし</button>
+    </div>` : '';
+
   return `<div class="task-item" data-id="${task.id}">
   <div class="task-row">
     <button class="check-btn" onclick="handleCheck(event,'${task.id}')"
       title="${done ? '未完了に戻す' : '完了にする'}">
       ${done ? SVG_CHECKED : SVG_UNCHECKED}
     </button>
+    ${prioEmoji}
     <span class="task-name${done ? ' done' : ''}">${escHtml(task.title)}</span>
     ${dueDateChip}
     ${doneDateChip}
@@ -1282,6 +1384,7 @@ function taskHtml(task, done) {
     </button>
   </div>
   <div class="task-detail">
+    ${prioSelector}
     <div class="detail-label">📅 期日</div>
     <input type="date" class="detail-date-input" data-id="${task.id}" data-field="dueDate"
       value="${escHtml(task.dueDate || '')}"
@@ -1443,6 +1546,7 @@ function addTask() {
     id: uid(), title,
     description: '', memo: '',
     dueDate: '',
+    priority: '',
     completed: false,
     createdAt: new Date().toISOString(),
     completedAt: null
@@ -1481,6 +1585,30 @@ function toggleTask(event, id) {
   event.stopPropagation();
   const item = event.target.closest('.task-item');
   if (item) flipTask(item);
+}
+
+// 緊急度を変更する
+function setPriority(event, id, priority) {
+  event.stopPropagation();
+  const task = state.tasks.find(t => t.id === id);
+  if (!task) return;
+  task.priority = priority;
+  saveState();
+  renderActive(); // アコーディオン開閉状態は openTasks で維持される
+}
+
+// ソート切替
+function toggleSort() {
+  activeSort = activeSort === 'priority' ? 'created' : 'priority';
+  const btn = document.getElementById('sortToggleBtn');
+  if (activeSort === 'priority') {
+    btn.textContent = '優先度順 ↕';
+    btn.classList.remove('by-created');
+  } else {
+    btn.textContent = '作成順 ↕';
+    btn.classList.add('by-created');
+  }
+  renderActive();
 }
 
 // 完了済み → 進行中 に戻す
