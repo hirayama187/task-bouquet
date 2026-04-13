@@ -917,7 +917,7 @@
     <div class="add-form-label">✏️ 新しいタスク</div>
     <div class="add-form-row">
       <input type="text" id="newTitle" class="add-form-input"
-        placeholder="やることを入力して Enter ↵" maxlength="200"/>
+        placeholder="やることを入力…" maxlength="200"/>
       <button class="btn-add" onclick="addTask()">＋ 追加</button>
     </div>
   </div>
@@ -1566,9 +1566,7 @@ function toggleBouquet(id) {
 // =============================================================
 //  初期化
 // =============================================================
-document.getElementById('newTitle').addEventListener('keydown', e => {
-  if (e.key === 'Enter') addTask();
-});
+// Enterキーではタスクを追加しない（＋追加ボタンのみ受け付ける）
 
 document.getElementById('bouquetTitleInput').addEventListener('keydown', e => {
   if (e.key === 'Enter')  confirmBundle();
