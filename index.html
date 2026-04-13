@@ -1,0 +1,1467 @@
+
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Task Bouquet</title>
+  <style>
+    /* =====================================================
+       RESET & BASE
+    ===================================================== */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Hiragino Sans',
+                   'Yu Gothic UI', 'Meiryo', sans-serif;
+      background: #fdf0f5;
+      color: #4a3a4a;
+      min-height: 100vh;
+      line-height: 1.65;
+      font-size: 14px;
+    }
+
+    /* やさしい水玉背景 */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image:
+        radial-gradient(circle, #f9c8d8 1.2px, transparent 1.2px),
+        radial-gradient(circle, #c8e8d0 1px, transparent 1px);
+      background-size: 44px 44px, 66px 66px;
+      background-position: 0 0, 22px 22px;
+      opacity: 0.15;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .app {
+      max-width: 820px;
+      margin: 0 auto;
+      padding: 24px 16px 80px;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* =====================================================
+       HEADER
+    ===================================================== */
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 10px;
+      background: linear-gradient(135deg, #f7c5d5 0%, #f9e2ec 45%, #e6d6f5 100%);
+      border-radius: 22px;
+      padding: 18px 26px;
+      margin-bottom: 14px;
+      box-shadow: 0 4px 18px rgba(218,122,155,0.18);
+      border: 1px solid rgba(255,255,255,0.75);
+    }
+
+    .header-title {
+      font-size: 19px;
+      font-weight: 800;
+      color: #8a3d60;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      letter-spacing: 0.02em;
+    }
+
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .today-chip {
+      font-size: 12px;
+      color: #9a4870;
+      background: rgba(255,255,255,0.68);
+      border: 1px solid rgba(220,128,160,0.32);
+      border-radius: 20px;
+      padding: 5px 14px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      white-space: nowrap;
+    }
+
+    .today-chip strong {
+      font-size: 15px;
+      font-weight: 800;
+      color: #cc4878;
+    }
+
+    /* =====================================================
+       FLOWER GARDEN
+    ===================================================== */
+    .garden-card {
+      background: linear-gradient(170deg, #f0faf0 0%, #e4f5e4 100%);
+      border-radius: 20px;
+      padding: 14px 18px 16px;
+      margin-bottom: 14px;
+      box-shadow: 0 2px 14px rgba(90,160,90,0.12);
+      border: 1.5px solid #bce4bc;
+    }
+
+    .garden-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+
+    .garden-label {
+      font-size: 12px;
+      font-weight: 700;
+      color: #3d7a3d;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      letter-spacing: 0.04em;
+    }
+
+    .garden-count {
+      font-size: 12px;
+      font-weight: 600;
+      color: #6ab06a;
+      background: rgba(255,255,255,0.6);
+      border: 1px solid #a8d8a8;
+      border-radius: 20px;
+      padding: 2px 10px;
+    }
+
+    .garden {
+      min-height: 58px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 2px 0px;
+      align-items: flex-end;
+      padding: 4px 2px 0;
+    }
+
+    .garden-empty {
+      width: 100%;
+      text-align: center;
+      font-size: 13px;
+      color: #88b888;
+      padding: 8px 0 4px;
+      line-height: 1.8;
+    }
+
+    /* 花アイテム */
+    .flower-item {
+      font-size: 23px;
+      display: inline-block;
+      line-height: 1.1;
+      cursor: default;
+      user-select: none;
+      /* transform は CSS変数で制御（inline style に transform は書かない） */
+      transform: rotate(var(--rot, 0deg)) translateY(var(--oy, 0px));
+      transition: transform 0.22s ease;
+    }
+
+    .flower-item:hover {
+      transform: rotate(calc(var(--rot, 0deg) + 18deg))
+                 translateY(calc(var(--oy, 0px) - 5px))
+                 scale(1.35);
+    }
+
+    .flower-item.animate-pop {
+      animation: flowerPop 0.42s ease-out both;
+    }
+
+    .flower-item.gathering {
+      animation: flowerGather 0.52s ease-in forwards !important;
+      transition: none !important;
+    }
+
+    @keyframes flowerPop {
+      0%   { transform: scale(0) rotate(-35deg); opacity: 0; }
+      55%  { transform: scale(1.4) rotate(6deg);  opacity: 1; }
+      100% { transform: scale(1) rotate(var(--rot, 0deg)) translateY(var(--oy, 0px)); opacity: 1; }
+    }
+
+    @keyframes flowerGather {
+      0%   { transform: scale(1)    rotate(var(--rot, 0deg)) translateY(var(--oy, 0px)); opacity: 1; }
+      35%  { transform: scale(1.18) rotate(calc(var(--rot, 0deg) + 22deg));              opacity: 0.85; }
+      100% { transform: scale(0)    rotate(calc(var(--rot, 0deg) + 210deg));             opacity: 0; }
+    }
+
+    /* =====================================================
+       ADD TASK FORM
+    ===================================================== */
+    .add-form {
+      background: #fff;
+      border-radius: 18px;
+      padding: 16px 20px;
+      margin-bottom: 14px;
+      box-shadow: 0 2px 12px rgba(200,100,140,0.09);
+      border: 1.5px solid #f5d8e5;
+    }
+
+    .add-form-label {
+      font-size: 11px;
+      color: #c090a8;
+      margin-bottom: 9px;
+      font-weight: 700;
+      letter-spacing: 0.07em;
+    }
+
+    .add-form-row { display: flex; gap: 10px; }
+
+    .add-form-input {
+      flex: 1;
+      padding: 10px 16px;
+      border: 1.5px solid #f0d0de;
+      border-radius: 30px;
+      font-size: 14px;
+      outline: none;
+      color: #4a3a4a;
+      font-family: inherit;
+      background: #fffafc;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .add-form-input:focus {
+      border-color: #e080a8;
+      box-shadow: 0 0 0 3px rgba(224,128,168,0.13);
+      background: #fff;
+    }
+
+    .add-form-input::placeholder { color: #d8b0c4; }
+
+    .btn-add {
+      padding: 10px 22px;
+      background: linear-gradient(135deg, #e878a8, #ce5585);
+      color: #fff;
+      border: none;
+      border-radius: 30px;
+      font-size: 14px;
+      font-family: inherit;
+      cursor: pointer;
+      font-weight: 700;
+      white-space: nowrap;
+      box-shadow: 0 2px 8px rgba(206,85,133,0.28);
+      transition: opacity 0.18s, transform 0.12s;
+    }
+
+    .btn-add:hover  { opacity: 0.88; }
+    .btn-add:active { transform: scale(0.97); }
+
+    /* =====================================================
+       SECTION CARD
+    ===================================================== */
+    .section-card {
+      background: #fff;
+      border-radius: 18px;
+      margin-bottom: 14px;
+      box-shadow: 0 2px 12px rgba(200,100,140,0.08);
+      overflow: hidden;
+      border: 1.5px solid #f5d8e5;
+    }
+
+    .section-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 13px 20px;
+      border-bottom: 1px solid #fce8f0;
+    }
+
+    .section-head-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .section-head-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: #7a3d60;
+    }
+
+    .count-badge {
+      background: #fce0ec;
+      color: #c05878;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 2px 9px;
+      border-radius: 20px;
+    }
+
+    /* =====================================================
+       TASK ITEM  — 横書き固定レイアウト
+    ===================================================== */
+    .task-item {
+      border-bottom: 1px solid #fceef4;
+    }
+
+    .task-item:last-child { border-bottom: none; }
+
+    /* タスク行: [check] [title (flex:1)] [done-date] [chevron] */
+    .task-row {
+      display: flex;
+      flex-direction: row;      /* 横並び確定 */
+      align-items: center;
+      padding: 11px 16px 11px 18px;
+      gap: 10px;
+      cursor: pointer;
+      user-select: none;
+      transition: background 0.12s;
+      min-width: 0;
+    }
+
+    .task-row:hover { background: #fff5f8; }
+
+    /* 小さなチェックボタン (SVGベース) */
+    .check-btn {
+      width: 22px;
+      height: 22px;
+      flex-shrink: 0;
+      background: none;
+      border: none;
+      padding: 0;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      transition: transform 0.15s;
+      line-height: 1;
+    }
+
+    .check-btn:hover  { transform: scale(1.18); }
+    .check-btn:active { transform: scale(0.9); }
+
+    /* タスクタイトル: 横書きを明示 */
+    .task-name {
+      flex: 1;
+      font-size: 14px;
+      color: #4a3a4a;
+      min-width: 0;
+      word-break: break-word;
+      overflow-wrap: break-word;
+      writing-mode: horizontal-tb;   /* 横書き強制 */
+      text-orientation: mixed;
+      line-height: 1.5;
+    }
+
+    .task-name.done {
+      text-decoration: line-through;
+      color: #c8a8b8;
+    }
+
+    .done-date-chip {
+      font-size: 11px;
+      color: #d0a8c0;
+      white-space: nowrap;
+      flex-shrink: 0;
+      background: #fce8f2;
+      padding: 2px 8px;
+      border-radius: 10px;
+    }
+
+    /* 期日チップ（タイトル右横） */
+    .due-date-chip {
+      font-size: 11px;
+      color: #c4a0b5;
+      white-space: nowrap;
+      flex-shrink: 0;
+      display: inline-flex;
+      align-items: center;
+      gap: 2px;
+      letter-spacing: 0.01em;
+    }
+
+    /* 期日入力フィールド（詳細内） */
+    .detail-date-input {
+      padding: 8px 12px;
+      border: 1.5px solid #f0d0e0;
+      border-radius: 10px;
+      font-size: 13px;
+      font-family: inherit;
+      color: #4a3a4a;
+      outline: none;
+      background: #fffafc;
+      transition: border-color 0.18s, box-shadow 0.18s;
+      cursor: pointer;
+    }
+
+    .detail-date-input:focus {
+      border-color: #e878a8;
+      box-shadow: 0 0 0 3px rgba(232,120,168,0.12);
+      background: #fff;
+    }
+
+    .detail-date-input::-webkit-calendar-picker-indicator {
+      opacity: 0.45;
+      cursor: pointer;
+    }
+
+    .detail-date-input[readonly] {
+      background: #fdf0f5;
+      color: #c8a8b8;
+      cursor: default;
+      border-color: #f5e0ea;
+    }
+
+    /* 詳細展開ボタン */
+    .expand-btn {
+      width: 24px;
+      height: 24px;
+      flex-shrink: 0;
+      background: none;
+      border: none;
+      padding: 0;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #d8b0c8;
+      border-radius: 50%;
+      transition: color 0.18s, transform 0.22s, background 0.15s;
+    }
+
+    .expand-btn:hover { background: #fce8f2; color: #e878a8; }
+
+    .task-item.open .expand-btn {
+      transform: rotate(180deg);
+      color: #e878a8;
+    }
+
+    /* =====================================================
+       TASK DETAIL (アコーディオン)
+    ===================================================== */
+    .task-detail {
+      display: none;
+      padding: 6px 18px 16px 50px;
+      background: linear-gradient(180deg, #fff8fb 0%, #fff 100%);
+      border-top: 1px solid #fce8f2;
+    }
+
+    .task-item.open .task-detail { display: block; }
+
+    .detail-label {
+      font-size: 11px;
+      color: #c090a8;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      margin-top: 12px;
+      margin-bottom: 5px;
+    }
+
+    .detail-textarea {
+      width: 100%;
+      padding: 9px 13px;
+      border: 1.5px solid #f0d0e0;
+      border-radius: 12px;
+      font-size: 13px;
+      font-family: inherit;
+      color: #4a3a4a;
+      resize: vertical;
+      min-height: 62px;
+      outline: none;
+      background: #fffafc;
+      line-height: 1.6;
+      transition: border-color 0.18s, box-shadow 0.18s;
+    }
+
+    .detail-textarea:focus {
+      border-color: #e878a8;
+      box-shadow: 0 0 0 3px rgba(232,120,168,0.12);
+      background: #fff;
+    }
+
+    .detail-textarea[readonly] {
+      background: #fdf0f5;
+      color: #c8a8b8;
+      cursor: default;
+      resize: none;
+      border-color: #f5e0ea;
+    }
+
+    .detail-meta {
+      font-size: 11px;
+      color: #d8b8c8;
+      margin-top: 10px;
+    }
+
+    /* =====================================================
+       EMPTY STATE
+    ===================================================== */
+    .empty-msg {
+      padding: 24px 20px;
+      text-align: center;
+      color: #d0b0c0;
+      font-size: 13px;
+      line-height: 2;
+    }
+
+    .empty-icon {
+      font-size: 30px;
+      display: block;
+      margin-bottom: 4px;
+    }
+
+    /* =====================================================
+       BUNDLE BUTTON
+    ===================================================== */
+    .btn-bundle {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 7px 16px;
+      background: linear-gradient(135deg, #efe0f8, #e6ceef);
+      color: #7035a0;
+      border: 1.5px solid #d5aee8;
+      border-radius: 30px;
+      font-size: 13px;
+      font-family: inherit;
+      cursor: pointer;
+      font-weight: 700;
+      transition: all 0.2s;
+      white-space: nowrap;
+      box-shadow: 0 1px 5px rgba(155,75,200,0.13);
+    }
+
+    .btn-bundle:hover {
+      background: linear-gradient(135deg, #9558c5, #7035a0);
+      color: #fff;
+      border-color: transparent;
+      box-shadow: 0 2px 10px rgba(155,75,200,0.3);
+    }
+
+    .btn-bundle:active { transform: scale(0.97); }
+
+    /* =====================================================
+       COMPLETED SECTION
+    ===================================================== */
+    .completed-head {
+      background: linear-gradient(90deg, #f5f8ff, #eef3fe);
+      border-bottom-color: #dce8f8;
+    }
+
+    .completed-head .section-head-title { color: #4858a0; }
+    .completed-head .count-badge        { background: #dde8f8; color: #4858a0; }
+
+    #completedList .task-item           { border-bottom-color: #eef2fb; }
+    #completedList .task-row:hover      { background: #f7faff; }
+    #completedList .task-item.open .task-detail {
+      background: linear-gradient(180deg, #f7faff 0%, #fff 100%);
+      border-top-color: #dce8f8;
+    }
+
+    /* =====================================================
+       BOUQUET HISTORY
+    ===================================================== */
+    .bouquet-head {
+      background: linear-gradient(90deg, #fffaf0, #fff8ea);
+      border-bottom-color: #f0e4c0;
+    }
+
+    .bouquet-head .section-head-title { color: #885018; }
+    .bouquet-head .count-badge        { background: #f5e4b0; color: #885018; }
+
+    .bouquet-item { border-bottom: 1px solid #f5ecda; }
+    .bouquet-item:last-child { border-bottom: none; }
+
+    .bouquet-row {
+      display: flex;
+      align-items: center;
+      padding: 13px 18px;
+      gap: 12px;
+      cursor: pointer;
+      user-select: none;
+      transition: background 0.12s;
+    }
+
+    .bouquet-row:hover { background: #fffdf4; }
+
+    /* 💐 アイコン */
+    .bouquet-main-icon {
+      font-size: 28px;
+      flex-shrink: 0;
+      line-height: 1;
+      filter: drop-shadow(0 1px 2px rgba(190,140,50,0.22));
+    }
+
+    /* 情報カラム */
+    .bouquet-info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    /* 1行目：タイトル */
+    .bouquet-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: #5a3208;
+      margin-bottom: 5px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    /* 2行目：花の種類一覧 ＋ 日付（同行・右端） */
+    .bouquet-sub-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      min-width: 0;
+    }
+
+    .bouquet-flower-types {
+      font-size: 14px;
+      line-height: 1.35;
+      flex: 1;
+      min-width: 0;
+      /* 省略はJS側で制御 */
+    }
+
+    .bouquet-date {
+      font-size: 11px;
+      color: #a87028;
+      white-space: nowrap;
+      flex-shrink: 0;
+      background: #f8e8b8;
+      padding: 2px 8px;
+      border-radius: 10px;
+    }
+
+    .bouquet-expand-btn {
+      width: 24px;
+      height: 24px;
+      flex-shrink: 0;
+      background: none;
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #c8a868;
+      border-radius: 50%;
+      transition: color 0.18s, transform 0.22s, background 0.15s;
+    }
+
+    .bouquet-expand-btn:hover    { background: #f5e8c0; color: #987028; }
+    .bouquet-item.open .bouquet-expand-btn { transform: rotate(180deg); color: #987028; }
+
+    .bouquet-detail {
+      display: none;
+      padding: 4px 18px 14px 18px;
+      background: linear-gradient(180deg, #fffef6 0%, #fff 100%);
+      border-top: 1px solid #f0e4c0;
+    }
+
+    .bouquet-item.open .bouquet-detail { display: block; }
+
+    .bouquet-task-line {
+      font-size: 13px;
+      color: #806038;
+      padding: 4px 0;
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 8px;
+      border-bottom: 1px dotted #f0e0c0;
+    }
+
+    .bouquet-task-line:last-child { border-bottom: none; }
+
+    .bouquet-task-name::before {
+      content: '🌸 ';
+      font-size: 11px;
+    }
+
+    .bouquet-task-date {
+      font-size: 11px;
+      color: #c0a068;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    /* =====================================================
+       BUNDLE MODAL
+    ===================================================== */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(70, 25, 55, 0.38);
+      backdrop-filter: blur(5px);
+      -webkit-backdrop-filter: blur(5px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      padding: 20px;
+    }
+
+    .modal-box {
+      background: #fff;
+      border-radius: 26px;
+      padding: 34px 30px 28px;
+      width: 100%;
+      max-width: 390px;
+      box-shadow: 0 22px 64px rgba(195,78,128,0.24), 0 4px 14px rgba(195,78,128,0.14);
+      border: 1.5px solid #f5cde5;
+      text-align: center;
+      animation: modalPop 0.28s cubic-bezier(0.34,1.56,0.64,1) both;
+    }
+
+    @keyframes modalPop {
+      0%   { transform: scale(0.82) translateY(16px); opacity: 0; }
+      100% { transform: scale(1)    translateY(0);    opacity: 1; }
+    }
+
+    .modal-emoji  { font-size: 50px; display: block; margin-bottom: 10px; }
+    .modal-title  { font-size: 18px; font-weight: 800; color: #763050; margin-bottom: 4px; }
+    .modal-sub    { font-size: 13px; color: #b06888; margin-bottom: 18px; }
+
+    .modal-input {
+      width: 100%;
+      padding: 11px 16px;
+      border: 1.5px solid #f0bcd8;
+      border-radius: 14px;
+      font-size: 14px;
+      font-family: inherit;
+      outline: none;
+      color: #4a3a4a;
+      background: #fff9fc;
+      transition: border-color 0.18s, box-shadow 0.18s;
+      margin-bottom: 14px;
+    }
+
+    .modal-input:focus {
+      border-color: #e878a8;
+      box-shadow: 0 0 0 3px rgba(232,120,168,0.14);
+      background: #fff;
+    }
+
+    .modal-input::placeholder { color: #d8b0c8; }
+
+    .modal-flower-count {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 13px;
+      color: #9a5070;
+      background: #fce8f2;
+      border-radius: 20px;
+      padding: 6px 16px;
+      margin-bottom: 22px;
+    }
+
+    .modal-flower-count strong {
+      font-size: 16px;
+      font-weight: 800;
+      color: #cc4878;
+    }
+
+    .modal-actions {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+    }
+
+    .modal-cancel {
+      padding: 10px 22px;
+      background: #eeecec;
+      color: #888;
+      border: none;
+      border-radius: 30px;
+      font-size: 14px;
+      font-family: inherit;
+      cursor: pointer;
+      font-weight: 600;
+      transition: background 0.18s;
+    }
+
+    .modal-cancel:hover { background: #e0dede; }
+
+    .modal-confirm {
+      padding: 10px 24px;
+      background: linear-gradient(135deg, #9555c5, #7030a0);
+      color: #fff;
+      border: none;
+      border-radius: 30px;
+      font-size: 14px;
+      font-family: inherit;
+      cursor: pointer;
+      font-weight: 700;
+      box-shadow: 0 2px 8px rgba(112,48,160,0.28);
+      transition: opacity 0.18s, transform 0.12s;
+    }
+
+    .modal-confirm:hover  { opacity: 0.9; }
+    .modal-confirm:active { transform: scale(0.97); }
+
+    /* =====================================================
+       TOAST
+    ===================================================== */
+    .toast {
+      position: fixed;
+      bottom: 28px;
+      left: 50%;
+      transform: translateX(-50%) translateY(16px);
+      background: linear-gradient(135deg, #e878a8, #c24d82);
+      color: #fff;
+      padding: 10px 26px;
+      border-radius: 30px;
+      font-size: 13px;
+      font-weight: 600;
+      opacity: 0;
+      transition: opacity 0.28s, transform 0.28s;
+      pointer-events: none;
+      z-index: 9999;
+      white-space: nowrap;
+      box-shadow: 0 4px 18px rgba(194,77,130,0.35);
+    }
+
+    .toast.visible {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+  </style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ▼ ヘッダー -->
+  <header class="header">
+    <div class="header-title">🌸 Task Bouquet</div>
+    <div class="header-right">
+      <div class="today-chip">
+        ✨ 今日の完了：<strong id="todayCount">0</strong> タスク
+      </div>
+    </div>
+  </header>
+
+  <!-- ▼ 花畑エリア -->
+  <section class="garden-card">
+    <div class="garden-head">
+      <div class="garden-label">🌿 いまの花畑</div>
+      <div class="garden-count" id="gardenCount">0 輪</div>
+    </div>
+    <div class="garden" id="flowerGarden">
+      <div class="garden-empty">
+        まだ花が咲いていません 🌱<br>
+        <small>タスクを完了すると花が1輪咲きます</small>
+      </div>
+    </div>
+  </section>
+
+  <!-- ▼ タスク追加 -->
+  <div class="add-form">
+    <div class="add-form-label">✏️ 新しいタスク</div>
+    <div class="add-form-row">
+      <input type="text" id="newTitle" class="add-form-input"
+        placeholder="やることを入力して Enter ↵" maxlength="200"/>
+      <button class="btn-add" onclick="addTask()">＋ 追加</button>
+    </div>
+  </div>
+
+  <!-- ▼ 進行中タスク -->
+  <div class="section-card">
+    <div class="section-head">
+      <div class="section-head-left">
+        <span class="section-head-title">🌿 進行中</span>
+        <span class="count-badge" id="activeCount">0</span>
+      </div>
+    </div>
+    <div id="activeList"></div>
+  </div>
+
+  <!-- ▼ 完了済みタスク -->
+  <div class="section-card">
+    <div class="section-head completed-head">
+      <div class="section-head-left">
+        <span class="section-head-title">✨ 完了済み</span>
+        <span class="count-badge" id="completedCount">0</span>
+      </div>
+      <button class="btn-bundle" id="bundleBtn" style="display:none;" onclick="showBundleModal()">
+        💐 花束にまとめる
+      </button>
+    </div>
+    <div id="completedList"></div>
+  </div>
+
+  <!-- ▼ 花束の記録 -->
+  <div class="section-card">
+    <div class="section-head bouquet-head">
+      <div class="section-head-left">
+        <span class="section-head-title">🌷 花束の記録</span>
+        <span class="count-badge" id="bouquetCount">0</span>
+      </div>
+    </div>
+    <div id="bouquetList"></div>
+  </div>
+
+</div><!-- /.app -->
+
+<!-- ▼ 花束タイトル入力モーダル -->
+<div class="modal-overlay" id="bundleModal" style="display:none;" onclick="overlayClick(event)">
+  <div class="modal-box" onclick="event.stopPropagation()">
+    <span class="modal-emoji">💐</span>
+    <div class="modal-title">花束にまとめます</div>
+    <div class="modal-sub">タイトルをつけてください（省略可）</div>
+    <input type="text" id="bouquetTitleInput" class="modal-input"
+      placeholder="例：4月の成果、プロジェクト完了… " maxlength="50"/>
+    <div>
+      <div class="modal-flower-count">
+        🌸 <strong id="modalFlowerCount">0</strong> 輪の花束が完成します
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="modal-cancel" onclick="hideBundleModal()">キャンセル</button>
+      <button class="modal-confirm" onclick="confirmBundle()">花束にする 💐</button>
+    </div>
+  </div>
+</div>
+
+<!-- ▼ トースト通知 -->
+<div class="toast" id="toast"></div>
+
+<script>
+// =============================================================
+//  定数
+// =============================================================
+const STORAGE_KEY  = 'taskBouquet_v1';
+const FLOWER_TYPES = ['🌸', '🌺', '🌼', '🌻', '🌷', '🌹', '🪷'];
+
+// SVG（外部依存ゼロ）
+const SVG_UNCHECKED = `<svg width="19" height="19" viewBox="0 0 19 19" fill="none">
+  <circle cx="9.5" cy="9.5" r="8" stroke="#e0a8c0" stroke-width="1.6" fill="#fff"/>
+</svg>`;
+
+const SVG_CHECKED = `<svg width="19" height="19" viewBox="0 0 19 19" fill="none">
+  <circle cx="9.5" cy="9.5" r="9.5" fill="#e878a8"/>
+  <polyline points="5,9.5 8,12.5 14,6" stroke="#fff" stroke-width="1.9"
+    stroke-linecap="round" stroke-linejoin="round"/>
+</svg>`;
+
+const SVG_CHEVRON = `<svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+  <path d="M3 5l4 4 4-4" stroke="currentColor" stroke-width="1.6"
+    stroke-linecap="round" stroke-linejoin="round"/>
+</svg>`;
+
+// =============================================================
+//  状態
+// =============================================================
+let state = {
+  tasks:   [],
+  // flowers: [{ id, type, rotation, offsetY }]
+  flowers: [],
+  // bouquets: [{ id, title, createdAt, flowers:[{type}], tasks:[{title,completedAt}] }]
+  bouquets: []
+};
+
+const openTasks    = new Set(); // アコーディオン開閉状態（タスクID）
+const openBouquets = new Set(); // アコーディオン開閉状態（花束ID）
+let   lastFlowerId = null;      // 最後に追加した花のID（ポップアニメ用）
+
+// =============================================================
+//  localStorage
+// =============================================================
+function loadState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) {
+      const p = JSON.parse(raw);
+      state.tasks    = p.tasks    || [];
+      state.flowers  = p.flowers  || [];
+      state.bouquets = p.bouquets || [];
+      return;
+    }
+    // 旧バージョン (taskMgr_v2 / taskMgr_v3) からの移行
+    const oldKey = localStorage.getItem('taskMgr_v3') ? 'taskMgr_v3'
+                 : localStorage.getItem('taskMgr_v2') ? 'taskMgr_v2'
+                 : null;
+    if (oldKey) {
+      const p = JSON.parse(localStorage.getItem(oldKey));
+      state.tasks = p.tasks || [];
+      // flowers
+      if (Array.isArray(p.flowers)) {
+        state.flowers = p.flowers;
+      } else {
+        const cnt = p.flowerCount || 0;
+        state.flowers = Array.from({ length: cnt }, makeFlower);
+      }
+      // bouquets
+      state.bouquets = (p.bouquets || []).map(b => ({
+        id:        b.id || uid(),
+        title:     b.title || fmtDate(b.createdAt),
+        createdAt: b.createdAt,
+        flowers:   Array.isArray(b.flowers)
+                     ? b.flowers
+                     : Array.from({ length: b.flowerCount || 0 }, () => ({ type: randFlower() })),
+        tasks: Array.isArray(b.tasks)
+                 ? b.tasks
+                 : (b.taskTitles || []).map(t => ({ title: t, completedAt: null }))
+      }));
+      saveState();
+    }
+  } catch(e) { /* 無視 */ }
+}
+
+function saveState() {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch(e) { /* 無視 */ }
+}
+
+// =============================================================
+//  ユーティリティ
+// =============================================================
+function uid() {
+  return Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+}
+
+function escHtml(s) {
+  if (!s) return '';
+  return String(s)
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');
+}
+
+function fmtDate(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  return `${d.getFullYear()}/${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')}`;
+}
+
+function fmtDateTime(iso) {
+  if (!iso) return '';
+  const d = new Date(iso);
+  return `${fmtDate(iso)} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+}
+
+function randFlower() {
+  return FLOWER_TYPES[Math.floor(Math.random() * FLOWER_TYPES.length)];
+}
+
+function makeFlower() {
+  return {
+    id:       uid(),
+    type:     randFlower(),
+    rotation: Math.round((Math.random() - 0.5) * 30),  // -15〜+15 度
+    offsetY:  Math.round((Math.random() - 0.5) * 12)   // -6〜+6 px
+  };
+}
+
+// 期日の表示フォーマット YYYY-MM-DD → M/D
+function fmtDueDisplay(dateStr) {
+  if (!dateStr) return '';
+  const parts = dateStr.split('-');
+  if (parts.length !== 3) return '';
+  return `${parseInt(parts[1])}/${parseInt(parts[2])}`;
+}
+
+function getTodayCount() {
+  const today = new Date().toDateString();
+  const inList = state.tasks.filter(t =>
+    t.completed && t.completedAt &&
+    new Date(t.completedAt).toDateString() === today
+  ).length;
+  const inBouquets = state.bouquets.reduce((sum, b) =>
+    sum + (b.tasks || []).filter(t =>
+      t.completedAt && new Date(t.completedAt).toDateString() === today
+    ).length, 0);
+  return inList + inBouquets;
+}
+
+let toastTimer = null;
+function showToast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('visible');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('visible'), 3000);
+}
+
+// =============================================================
+//  描画
+// =============================================================
+function renderAll() {
+  renderHeader();
+  renderGarden();
+  renderActive();
+  renderCompleted();
+  renderBouquets();
+}
+
+function renderHeader() {
+  document.getElementById('todayCount').textContent = getTodayCount();
+}
+
+// ── 花畑 ──
+function renderGarden() {
+  const el      = document.getElementById('flowerGarden');
+  const countEl = document.getElementById('gardenCount');
+  const flowers = state.flowers;
+
+  countEl.textContent = `${flowers.length} 輪`;
+
+  if (flowers.length === 0) {
+    el.innerHTML = `<div class="garden-empty">
+      まだ花が咲いていません 🌱<br>
+      <small>タスクを完了すると花が1輪咲きます</small>
+    </div>`;
+    return;
+  }
+
+  el.innerHTML = flowers.map(f => {
+    const isNew  = f.id === lastFlowerId;
+    // CSS変数だけ設定。transform はCSSで処理
+    const style  = `--rot:${f.rotation}deg; --oy:${f.offsetY}px;`;
+    const cls    = isNew ? 'flower-item animate-pop' : 'flower-item';
+    return `<span class="${cls}" style="${style}" title="${f.type}">${f.type}</span>`;
+  }).join('');
+}
+
+// ── 進行中タスク ──
+function renderActive() {
+  const items = state.tasks.filter(t => !t.completed);
+  document.getElementById('activeCount').textContent = items.length;
+  const el = document.getElementById('activeList');
+
+  if (!items.length) {
+    el.innerHTML = `<div class="empty-msg">
+      <span class="empty-icon">🌱</span>タスクを追加してみましょう
+    </div>`;
+    return;
+  }
+  el.innerHTML = items.map(t => taskHtml(t, false)).join('');
+  restoreOpen(el, items);
+  attachListeners(el, false);
+}
+
+// ── 完了済みタスク ──
+function renderCompleted() {
+  const items = state.tasks.filter(t => t.completed);
+  document.getElementById('completedCount').textContent = items.length;
+  document.getElementById('bundleBtn').style.display = items.length ? 'inline-flex' : 'none';
+  const el = document.getElementById('completedList');
+
+  if (!items.length) {
+    el.innerHTML = `<div class="empty-msg">
+      <span class="empty-icon">✨</span>完了したタスクが花を咲かせます
+    </div>`;
+    return;
+  }
+  el.innerHTML = items.map(t => taskHtml(t, true)).join('');
+  restoreOpen(el, items);
+  attachListeners(el, true);
+}
+
+// タスクHTML
+function taskHtml(task, done) {
+  const doneDateChip = done && task.completedAt
+    ? `<span class="done-date-chip">${fmtDate(task.completedAt)}</span>` : '';
+
+  // 期日チップ（未完了タスクのみ、設定がある場合に表示）
+  const dueDateChip = !done && task.dueDate
+    ? `<span class="due-date-chip">期日：${fmtDueDisplay(task.dueDate)}</span>` : '';
+
+  return `<div class="task-item" data-id="${task.id}">
+  <div class="task-row">
+    <button class="check-btn" onclick="handleCheck(event,'${task.id}')"
+      title="${done ? '未完了に戻す' : '完了にする'}">
+      ${done ? SVG_CHECKED : SVG_UNCHECKED}
+    </button>
+    <span class="task-name${done ? ' done' : ''}">${escHtml(task.title)}</span>
+    ${dueDateChip}
+    ${doneDateChip}
+    <button class="expand-btn" onclick="toggleTask(event,'${task.id}')" title="詳細を開閉">
+      ${SVG_CHEVRON}
+    </button>
+  </div>
+  <div class="task-detail">
+    <div class="detail-label">📅 期日</div>
+    <input type="date" class="detail-date-input" data-id="${task.id}" data-field="dueDate"
+      value="${escHtml(task.dueDate || '')}"
+      ${done ? 'readonly' : ''}/>
+    <div class="detail-label">📝 詳細説明</div>
+    <textarea class="detail-textarea" data-id="${task.id}" data-field="description"
+      rows="3" placeholder="詳しい内容を書いておきましょう…"
+      ${done ? 'readonly' : ''}>${escHtml(task.description || '')}</textarea>
+    <div class="detail-label">🗒 メモ</div>
+    <textarea class="detail-textarea" data-id="${task.id}" data-field="memo"
+      rows="2" placeholder="ちょっとしたメモも残せます…"
+      ${done ? 'readonly' : ''}>${escHtml(task.memo || '')}</textarea>
+    <div class="detail-meta">🕐 作成日時: ${fmtDateTime(task.createdAt)}</div>
+  </div>
+</div>`;
+}
+
+function restoreOpen(container, items) {
+  items.forEach(t => {
+    if (openTasks.has(t.id)) {
+      const el = container.querySelector(`.task-item[data-id="${t.id}"]`);
+      if (el) el.classList.add('open');
+    }
+  });
+}
+
+function attachListeners(container, done) {
+  // 行クリック → アコーディオン（check-btn / expand-btn は除外）
+  container.querySelectorAll('.task-row').forEach(row => {
+    row.addEventListener('click', e => {
+      if (e.target.closest('.check-btn') || e.target.closest('.expand-btn')) return;
+      flipTask(row.closest('.task-item'));
+    });
+  });
+  // 自動保存（進行中のみ）
+  if (!done) {
+    // テキストエリア（説明・メモ）
+    container.querySelectorAll('.detail-textarea').forEach(ta => {
+      ta.addEventListener('input', e => {
+        const task = state.tasks.find(t => t.id === e.target.dataset.id);
+        if (task) { task[e.target.dataset.field] = e.target.value; saveState(); }
+      });
+    });
+    // 期日入力
+    container.querySelectorAll('.detail-date-input').forEach(inp => {
+      inp.addEventListener('change', e => {
+        const task = state.tasks.find(t => t.id === e.target.dataset.id);
+        if (task) {
+          task.dueDate = e.target.value; // YYYY-MM-DD or ''
+          saveState();
+          // タスク行の期日チップだけ即時更新
+          const row = e.target.closest('.task-item').querySelector('.task-row');
+          const existing = row.querySelector('.due-date-chip');
+          if (task.dueDate) {
+            if (existing) {
+              existing.textContent = '期日：' + fmtDueDisplay(task.dueDate);
+            } else {
+              // タスク名の直後に挿入
+              const nameEl = row.querySelector('.task-name');
+              const chip = document.createElement('span');
+              chip.className = 'due-date-chip';
+              chip.textContent = '期日：' + fmtDueDisplay(task.dueDate);
+              nameEl.insertAdjacentElement('afterend', chip);
+            }
+          } else if (existing) {
+            existing.remove();
+          }
+        }
+      });
+    });
+  }
+}
+
+function flipTask(item) {
+  const id = item.dataset.id;
+  item.classList.toggle('open');
+  if (item.classList.contains('open')) openTasks.add(id);
+  else openTasks.delete(id);
+}
+
+// ── 花束履歴 ──
+function renderBouquets() {
+  const list    = [...state.bouquets].reverse();
+  const countEl = document.getElementById('bouquetCount');
+  const listEl  = document.getElementById('bouquetList');
+
+  countEl.textContent = state.bouquets.length;
+
+  if (!list.length) {
+    listEl.innerHTML = `<div class="empty-msg">
+      <span class="empty-icon">🌷</span>花束にまとめると、ここに成果が残ります
+    </div>`;
+    return;
+  }
+
+  listEl.innerHTML = list.map(b => {
+    const flowerDisplay = flowerTypesDisplay(b.flowers || []);
+    const taskCount     = (b.tasks || []).length;
+    // タイトル未入力ガード（旧データ対応）
+    const title = b.title || fmtDate(b.createdAt);
+    return `<div class="bouquet-item" data-bid="${b.id}">
+  <div class="bouquet-row" onclick="toggleBouquet('${b.id}')">
+    <div class="bouquet-main-icon">💐</div>
+    <div class="bouquet-info">
+      <div class="bouquet-title">${escHtml(title)}</div>
+      <div class="bouquet-sub-row">
+        <span class="bouquet-flower-types">${flowerDisplay}</span>
+        <span class="bouquet-date">${fmtDate(b.createdAt)}</span>
+      </div>
+    </div>
+    <button class="bouquet-expand-btn" title="詳細を見る">${SVG_CHEVRON}</button>
+  </div>
+  <div class="bouquet-detail">
+    ${(b.tasks || []).map(t => `
+    <div class="bouquet-task-line">
+      <span class="bouquet-task-name">${escHtml(t.title)}</span>
+      ${t.completedAt
+        ? `<span class="bouquet-task-date">${fmtDate(t.completedAt)}</span>`
+        : ''}
+    </div>`).join('')}
+  </div>
+</div>`;
+  }).join('');
+
+  list.forEach(b => {
+    if (openBouquets.has(b.id)) {
+      const el = listEl.querySelector(`.bouquet-item[data-bid="${b.id}"]`);
+      if (el) el.classList.add('open');
+    }
+  });
+}
+
+// 花束一覧用：省略あり（最大18輪、超えたら…）
+function flowerTypesDisplay(flowers) {
+  const MAX = 18;
+  if (!flowers || flowers.length === 0) return '';
+  const types = flowers.map(f => f.type || '🌸');
+  if (types.length <= MAX) return types.join('');
+  return types.slice(0, MAX).join('') + '…';
+}
+
+// 詳細ビュー用：全表示（旧関数を維持・互換）
+function flowerPreview(flowers) {
+  const MAX  = 16;
+  const show = flowers.slice(0, MAX).map(f => f.type || '🌸').join('');
+  const rest = flowers.length > MAX
+    ? `<span style="font-size:12px;color:#b07830"> +${flowers.length - MAX}</span>` : '';
+  return show + rest;
+}
+
+// =============================================================
+//  アクション
+// =============================================================
+function addTask() {
+  const inp   = document.getElementById('newTitle');
+  const title = inp.value.trim();
+  if (!title) { inp.focus(); return; }
+  state.tasks.unshift({
+    id: uid(), title,
+    description: '', memo: '',
+    dueDate: '',
+    completed: false,
+    createdAt: new Date().toISOString(),
+    completedAt: null
+  });
+  saveState();
+  inp.value = '';
+  renderActive();
+  renderHeader();
+}
+
+function handleCheck(event, id) {
+  event.stopPropagation();
+  const task = state.tasks.find(t => t.id === id);
+  if (!task) return;
+
+  task.completed = !task.completed;
+
+  if (task.completed) {
+    task.completedAt = new Date().toISOString();
+    const f = makeFlower();
+    lastFlowerId = f.id;
+    state.flowers.push(f);
+    saveState();
+    renderAll();
+    showToast('🌸 タスクを完了！花が1輪咲きました');
+  } else {
+    task.completedAt = null;
+    if (state.flowers.length > 0) state.flowers.pop();
+    lastFlowerId = null;
+    saveState();
+    renderAll();
+  }
+}
+
+function toggleTask(event, id) {
+  event.stopPropagation();
+  const item = event.target.closest('.task-item');
+  if (item) flipTask(item);
+}
+
+// ── 花束モーダル ──
+function showBundleModal() {
+  const completed = state.tasks.filter(t => t.completed);
+  if (!completed.length) return;
+  document.getElementById('modalFlowerCount').textContent = state.flowers.length;
+  document.getElementById('bouquetTitleInput').value = '';
+  document.getElementById('bundleModal').style.display = 'flex';
+  setTimeout(() => document.getElementById('bouquetTitleInput').focus(), 80);
+}
+
+function hideBundleModal() {
+  document.getElementById('bundleModal').style.display = 'none';
+}
+
+function overlayClick(e) {
+  if (e.target === e.currentTarget) hideBundleModal();
+}
+
+function confirmBundle() {
+  const title = document.getElementById('bouquetTitleInput').value.trim()
+              || fmtDate(new Date().toISOString());
+  hideBundleModal();
+
+  // 花畑の花をアニメーション（ふわっと集まる）
+  const flowerEls = document.querySelectorAll('#flowerGarden .flower-item');
+  flowerEls.forEach((el, i) => {
+    el.style.animationDelay = `${i * 18}ms`;
+    el.classList.add('gathering');
+  });
+
+  const wait = flowerEls.length > 0
+    ? Math.min(flowerEls.length * 18 + 560, 1000)
+    : 0;
+  setTimeout(() => doBundle(title), wait);
+}
+
+function doBundle(title) {
+  const completed = state.tasks.filter(t => t.completed);
+  if (!completed.length) return;
+
+  const bouquet = {
+    id:        uid(),
+    title,
+    createdAt: new Date().toISOString(),
+    flowers:   state.flowers.map(f => ({ type: f.type })),
+    tasks:     completed.map(t => ({ title: t.title, completedAt: t.completedAt }))
+  };
+
+  state.bouquets.push(bouquet);
+  state.tasks    = state.tasks.filter(t => !t.completed);
+  state.flowers  = [];
+  lastFlowerId   = null;
+
+  saveState();
+  renderAll();
+  showToast(`💐 ${bouquet.tasks.length} 個のタスクを達成！花束が完成しました 🎉`);
+}
+
+function toggleBouquet(id) {
+  const el = document.querySelector(`.bouquet-item[data-bid="${id}"]`);
+  if (!el) return;
+  el.classList.toggle('open');
+  if (el.classList.contains('open')) openBouquets.add(id);
+  else openBouquets.delete(id);
+}
+
+// =============================================================
+//  初期化
+// =============================================================
+document.getElementById('newTitle').addEventListener('keydown', e => {
+  if (e.key === 'Enter') addTask();
+});
+
+document.getElementById('bouquetTitleInput').addEventListener('keydown', e => {
+  if (e.key === 'Enter')  confirmBundle();
+  if (e.key === 'Escape') hideBundleModal();
+});
+
+loadState();
+renderAll();
+</script>
+</body>
+</html>
+
