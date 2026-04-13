@@ -367,6 +367,34 @@
       border-radius: 10px;
     }
 
+    /* 進行中に戻すボタン */
+    .revert-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      font-size: 11px;
+      font-family: inherit;
+      font-weight: 600;
+      color: #8888bb;
+      background: #f0f0f8;
+      border: 1px solid #d8d8ee;
+      border-radius: 20px;
+      padding: 3px 10px;
+      cursor: pointer;
+      white-space: nowrap;
+      flex-shrink: 0;
+      transition: background 0.15s, color 0.15s, border-color 0.15s;
+      line-height: 1.4;
+    }
+
+    .revert-btn:hover {
+      background: #e4e4f5;
+      color: #5555a0;
+      border-color: #b8b8e0;
+    }
+
+    .revert-btn:active { transform: scale(0.97); }
+
     /* 期日チップ（タイトル右横） */
     .due-date-chip {
       font-size: 11px;
@@ -1245,7 +1273,10 @@ function taskHtml(task, done) {
     <span class="task-name${done ? ' done' : ''}">${escHtml(task.title)}</span>
     ${dueDateChip}
     ${doneDateChip}
-    ${!done ? `<button class="delete-btn" onclick="showDeleteModal(event,'${task.id}')" title="削除">🗑️</button>` : ''}
+    ${done
+      ? `<button class="revert-btn" onclick="revertTask(event,'${task.id}')" title="進行中に戻す">↩ 戻す</button>`
+      : `<button class="delete-btn" onclick="showDeleteModal(event,'${task.id}')" title="削除">🗑️</button>`
+    }
     <button class="expand-btn" onclick="toggleTask(event,'${task.id}')" title="詳細を開閉">
       ${SVG_CHEVRON}
     </button>
@@ -1450,6 +1481,24 @@ function toggleTask(event, id) {
   event.stopPropagation();
   const item = event.target.closest('.task-item');
   if (item) flipTask(item);
+}
+
+// 完了済み → 進行中 に戻す
+function revertTask(event, id) {
+  event.stopPropagation();
+  const task = state.tasks.find(t => t.id === id && t.completed);
+  if (!task) return;
+
+  task.completed   = false;
+  task.completedAt = null;
+
+  // 対応する花を1輪取り除く
+  if (state.flowers.length > 0) state.flowers.pop();
+  lastFlowerId = null;
+
+  saveState();
+  renderAll();
+  showToast('↩ タスクを進行中に戻しました');
 }
 
 // ── タスク削除 ──
