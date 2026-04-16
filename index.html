@@ -971,12 +971,229 @@
       opacity: 1;
       transform: translateX(-50%) translateY(0);
     }
+
+    /* =====================================================
+       2-COLUMN LAYOUT
+    ===================================================== */
+    .columns {
+      display: flex;
+      gap: 16px;
+      align-items: flex-start;
+    }
+
+    .col-left {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .col-right {
+      width: 274px;
+      flex-shrink: 0;
+    }
+
+    .today-sticky {
+      position: sticky;
+      top: 20px;
+    }
+
+    @media (max-width: 760px) {
+      .columns { flex-direction: column; }
+      .col-right { width: 100%; order: -1; }
+      .today-sticky { position: static; }
+    }
+
+    /* =====================================================
+       TODAY'S TODO CARD
+    ===================================================== */
+    .today-card {
+      background: linear-gradient(170deg, #fff8fc 0%, #fef0f8 100%);
+      border-radius: 20px;
+      overflow: hidden;
+      box-shadow: 0 2px 16px rgba(220,100,160,0.12);
+      border: 1.5px solid #f5cde5;
+      transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+    }
+
+    .today-card.drag-over {
+      border-color: #e878a8;
+      box-shadow: 0 4px 24px rgba(232,120,168,0.3);
+      background: linear-gradient(170deg, #ffeef7 0%, #ffe4f2 100%);
+    }
+
+    .today-head {
+      padding: 13px 16px 11px;
+      border-bottom: 1px solid #fce8f2;
+      background: linear-gradient(90deg, #fce4f0, #fdf2f8);
+    }
+
+    .today-head-title {
+      font-size: 13px;
+      font-weight: 800;
+      color: #8a3d60;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      margin-bottom: 3px;
+    }
+
+    .today-head-hint {
+      font-size: 11px;
+      color: #c090a8;
+      line-height: 1.4;
+    }
+
+    .today-list {
+      min-height: 56px;
+    }
+
+    .today-drop-zone {
+      padding: 16px 14px;
+      text-align: center;
+      font-size: 12px;
+      color: #d8a8c0;
+      line-height: 1.8;
+      border: 2px dashed #f0cce0;
+      margin: 12px 12px 12px;
+      border-radius: 12px;
+      transition: all 0.18s;
+      pointer-events: none;
+    }
+
+    .today-card.drag-over .today-drop-zone {
+      border-color: #e878a8;
+      color: #c05080;
+      background: rgba(232,120,168,0.07);
+    }
+
+    .today-warn {
+      font-size: 11px;
+      color: #b83a3a;
+      background: #fff4f4;
+      border-top: 1px solid #fcd8d8;
+      padding: 8px 14px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    /* Today タスクアイテム */
+    .today-item {
+      display: flex;
+      align-items: center;
+      padding: 9px 10px 9px 14px;
+      gap: 7px;
+      border-bottom: 1px solid #fceef4;
+      cursor: grab;
+      transition: background 0.12s;
+      user-select: none;
+      position: relative;
+    }
+
+    .today-item:last-child { border-bottom: none; }
+    .today-item:hover { background: #fff5f9; }
+
+    .today-item.drag-over-item {
+      border-top: 2.5px solid #e878a8;
+      background: #fff0f7;
+    }
+
+    .today-item.dragging {
+      opacity: 0.35;
+    }
+
+    .today-task-name {
+      flex: 1;
+      font-size: 13px;
+      color: #4a3a4a;
+      min-width: 0;
+      word-break: break-word;
+      line-height: 1.45;
+    }
+
+    .today-prio {
+      font-size: 12px;
+      flex-shrink: 0;
+      line-height: 1;
+    }
+
+    .today-badge {
+      font-size: 10px;
+      font-weight: 700;
+      color: #d05888;
+      background: #fce0ec;
+      border-radius: 8px;
+      padding: 2px 6px;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    .today-check-btn {
+      width: 22px;
+      height: 22px;
+      flex-shrink: 0;
+      background: none;
+      border: none;
+      padding: 0;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      transition: transform 0.15s;
+    }
+
+    .today-check-btn:hover  { transform: scale(1.18); }
+    .today-check-btn:active { transform: scale(0.9); }
+
+    .today-remove-btn {
+      width: 22px;
+      height: 22px;
+      flex-shrink: 0;
+      background: none;
+      border: none;
+      padding: 0;
+      cursor: pointer;
+      color: #d8b0c8;
+      font-size: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      opacity: 0;
+      transition: opacity 0.15s, background 0.15s, color 0.15s;
+    }
+
+    .today-item:hover .today-remove-btn { opacity: 1; }
+    .today-remove-btn:hover { background: #fde8e8; color: #c84848; }
+
+    @media (hover: none) {
+      .today-remove-btn { opacity: 0.5; }
+    }
+
+    /* ドラッグ可能タスク */
+    .task-item[draggable="true"] .task-row { cursor: grab; }
+    .task-item[draggable="true"] .task-row:active { cursor: grabbing; }
+    .task-item.is-dragging { opacity: 0.38; }
+
+    /* ドラッグハンドルヒント（進行中タスク行） */
+    .drag-hint {
+      font-size: 11px;
+      color: #ddb8ca;
+      flex-shrink: 0;
+      cursor: grab;
+      padding: 0 2px;
+      line-height: 1;
+      opacity: 0;
+      transition: opacity 0.15s;
+    }
+
+    .task-row:hover .drag-hint { opacity: 1; }
   </style>
 </head>
 <body>
 <div class="app">
 
-  <!-- ▼ ヘッダー -->
+  <!-- ▼ ヘッダー（フル幅） -->
   <header class="header">
     <div class="header-title">🌸 Task Bouquet</div>
     <div class="header-right">
@@ -986,66 +1203,95 @@
     </div>
   </header>
 
-  <!-- ▼ 花畑エリア -->
-  <section class="garden-card">
-    <div class="garden-head">
-      <div class="garden-label">🌿 いまの花畑</div>
-      <div class="garden-count" id="gardenCount">0 輪</div>
-    </div>
-    <div class="garden" id="flowerGarden">
-      <div class="garden-empty">
-        まだ花が咲いていません 🌱<br>
-        <small>タスクを完了すると花が1輪咲きます</small>
-      </div>
-    </div>
-  </section>
+  <!-- ▼ 2カラム -->
+  <div class="columns">
 
-  <!-- ▼ タスク追加 -->
-  <div class="add-form">
-    <div class="add-form-label">✏️ 新しいタスク</div>
-    <div class="add-form-row">
-      <input type="text" id="newTitle" class="add-form-input"
-        placeholder="やることを入力…" maxlength="200"/>
-      <button class="btn-add" onclick="addTask()">＋ 追加</button>
-    </div>
-  </div>
+    <!-- 左カラム：既存コンテンツ -->
+    <div class="col-left">
 
-  <!-- ▼ 進行中タスク -->
-  <div class="section-card">
-    <div class="section-head">
-      <div class="section-head-left">
-        <span class="section-head-title">🌿 進行中</span>
-        <span class="count-badge" id="activeCount">0</span>
-      </div>
-      <button class="sort-toggle-btn" id="sortToggleBtn" onclick="toggleSort()">優先度順 ↕</button>
-    </div>
-    <div id="activeList"></div>
-  </div>
+      <!-- ▼ 花畑エリア -->
+      <section class="garden-card">
+        <div class="garden-head">
+          <div class="garden-label">🌿 いまの花畑</div>
+          <div class="garden-count" id="gardenCount">0 輪</div>
+        </div>
+        <div class="garden" id="flowerGarden">
+          <div class="garden-empty">
+            まだ花が咲いていません 🌱<br>
+            <small>タスクを完了すると花が1輪咲きます</small>
+          </div>
+        </div>
+      </section>
 
-  <!-- ▼ 完了済みタスク -->
-  <div class="section-card">
-    <div class="section-head completed-head">
-      <div class="section-head-left">
-        <span class="section-head-title">✨ 完了済み</span>
-        <span class="count-badge" id="completedCount">0</span>
+      <!-- ▼ タスク追加 -->
+      <div class="add-form">
+        <div class="add-form-label">✏️ 新しいタスク</div>
+        <div class="add-form-row">
+          <input type="text" id="newTitle" class="add-form-input"
+            placeholder="やることを入力…" maxlength="200"/>
+          <button class="btn-add" onclick="addTask()">＋ 追加</button>
+        </div>
       </div>
-      <button class="btn-bundle" id="bundleBtn" style="display:none;" onclick="showBundleModal()">
-        💐 花束にまとめる
-      </button>
-    </div>
-    <div id="completedList"></div>
-  </div>
 
-  <!-- ▼ 花束の記録 -->
-  <div class="section-card">
-    <div class="section-head bouquet-head">
-      <div class="section-head-left">
-        <span class="section-head-title">🌷 花束の記録</span>
-        <span class="count-badge" id="bouquetCount">0</span>
+      <!-- ▼ 進行中タスク -->
+      <div class="section-card">
+        <div class="section-head">
+          <div class="section-head-left">
+            <span class="section-head-title">🌿 進行中</span>
+            <span class="count-badge" id="activeCount">0</span>
+          </div>
+          <button class="sort-toggle-btn" id="sortToggleBtn" onclick="toggleSort()">優先度順 ↕</button>
+        </div>
+        <div id="activeList"></div>
       </div>
-    </div>
-    <div id="bouquetList"></div>
-  </div>
+
+      <!-- ▼ 完了済みタスク -->
+      <div class="section-card">
+        <div class="section-head completed-head">
+          <div class="section-head-left">
+            <span class="section-head-title">✨ 完了済み</span>
+            <span class="count-badge" id="completedCount">0</span>
+          </div>
+          <button class="btn-bundle" id="bundleBtn" style="display:none;" onclick="showBundleModal()">
+            💐 花束にまとめる
+          </button>
+        </div>
+        <div id="completedList"></div>
+      </div>
+
+      <!-- ▼ 花束の記録 -->
+      <div class="section-card">
+        <div class="section-head bouquet-head">
+          <div class="section-head-left">
+            <span class="section-head-title">🌷 花束の記録</span>
+            <span class="count-badge" id="bouquetCount">0</span>
+          </div>
+        </div>
+        <div id="bouquetList"></div>
+      </div>
+
+    </div><!-- /.col-left -->
+
+    <!-- 右カラム：本日のTODO（sticky） -->
+    <div class="col-right">
+      <div class="today-sticky">
+        <div class="today-card" id="todayCard"
+          ondragover="todayDragOver(event)"
+          ondragleave="todayDragLeave(event)"
+          ondrop="todayDrop(event)">
+          <div class="today-head">
+            <div class="today-head-title">📋 本日のTODO</div>
+            <div class="today-head-hint">進行中タスクをドラッグして追加</div>
+          </div>
+          <div class="today-list" id="todayList"></div>
+          <div id="todayWarn" class="today-warn" style="display:none;">
+            ⚠️ タスクが多めです。絞り込みをおすすめします
+          </div>
+        </div>
+      </div>
+    </div><!-- /.col-right -->
+
+  </div><!-- /.columns -->
 
 </div><!-- /.app -->
 
@@ -1100,6 +1346,11 @@ const PRIORITY_ORDER  = { high: 1, mid: 2, low: 3, '': 4 };
 // ソート状態（'priority' or 'created'）
 let activeSort = 'priority';
 
+// ドラッグ状態
+let dragTaskId  = null;  // ドラッグ中のタスクID
+let dragSource  = null;  // 'active' | 'today'
+let dragOverId  = null;  // todayリスト内でドラッグオーバー中のアイテムID
+
 // SVG（外部依存ゼロ）
 const SVG_UNCHECKED = `<svg width="19" height="19" viewBox="0 0 19 19" fill="none">
   <circle cx="9.5" cy="9.5" r="8" stroke="#e0a8c0" stroke-width="1.6" fill="#fff"/>
@@ -1120,11 +1371,11 @@ const SVG_CHEVRON = `<svg width="14" height="14" viewBox="0 0 14 14" fill="none"
 //  状態
 // =============================================================
 let state = {
-  tasks:   [],
-  // flowers: [{ id, type, rotation, offsetY }]
-  flowers: [],
-  // bouquets: [{ id, title, createdAt, flowers:[{type}], tasks:[{title,completedAt}] }]
-  bouquets: []
+  tasks:      [],
+  flowers:    [],
+  bouquets:   [],
+  todayTasks: [],   // 本日のTODO: タスクIDの配列（表示順）
+  todayDate:  ''    // 'YYYY-MM-DD' — 日付変化検知用
 };
 
 const openTasks    = new Set(); // アコーディオン開閉状態（タスクID）
@@ -1139,9 +1390,11 @@ function loadState() {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) {
       const p = JSON.parse(raw);
-      state.tasks    = p.tasks    || [];
-      state.flowers  = p.flowers  || [];
-      state.bouquets = p.bouquets || [];
+      state.tasks      = p.tasks      || [];
+      state.flowers    = p.flowers    || [];
+      state.bouquets   = p.bouquets   || [];
+      state.todayTasks = p.todayTasks || [];
+      state.todayDate  = p.todayDate  || '';
       return;
     }
     // 旧バージョン (taskMgr_v2 / taskMgr_v3) からの移行
@@ -1254,6 +1507,7 @@ function showToast(msg) {
 function renderAll() {
   renderHeader();
   renderGarden();
+  renderTodayList();
   renderActive();
   renderCompleted();
   renderBouquets();
@@ -1288,19 +1542,19 @@ function renderGarden() {
   }).join('');
 }
 
-// 進行中タスクをソートして返す
+// 進行中タスクをソートして返す（本日のTODOに入っているものを除外）
 function getSortedActive() {
-  const items = state.tasks.filter(t => !t.completed);
+  const todaySet = new Set(state.todayTasks);
+  const items = state.tasks.filter(t => !t.completed && !todaySet.has(t.id));
   if (activeSort === 'priority') {
     return [...items].sort((a, b) => {
       const pa = PRIORITY_ORDER[a.priority || ''];
       const pb = PRIORITY_ORDER[b.priority || ''];
       if (pa !== pb) return pa - pb;
-      // 同じ優先度は作成日の新しい順
       return new Date(b.createdAt) - new Date(a.createdAt);
     });
   }
-  return items; // 作成順（state.tasks への unshift 順）
+  return items;
 }
 
 // ── 進行中タスク ──
@@ -1315,9 +1569,14 @@ function renderActive() {
     </div>`;
     return;
   }
-  el.innerHTML = items.map(t => taskHtml(t, false)).join('');
+  el.innerHTML = items.map(t => taskHtmlActive(t)).join('');
   restoreOpen(el, items);
   attachListeners(el, false);
+  // ドラッグイベントをアクティブタスクに付与
+  el.querySelectorAll('.task-item[draggable="true"]').forEach(item => {
+    item.addEventListener('dragstart', e => activeDragStart(e, item.dataset.id));
+    item.addEventListener('dragend',   () => activeDragEnd());
+  });
 }
 
 // ── 完了済みタスク ──
@@ -1400,6 +1659,58 @@ function taskHtml(task, done) {
     <div class="detail-meta">🕐 作成日時: ${fmtDateTime(task.createdAt)}</div>
   </div>
 </div>`;
+}
+
+// draggable な進行中タスク（today除外済み）
+function taskHtmlActive(task) {
+  const html = taskHtml(task, false);
+  // <div class="task-item" → draggable="true" を付加
+  return html.replace('<div class="task-item"', '<div class="task-item" draggable="true"');
+}
+
+// ── 本日のTODOリスト ──
+function renderTodayList() {
+  // 削除済み・完了済みのIDをtodayTasksから除去（ゴミ掃除）
+  const validIds = new Set(state.tasks.filter(t => !t.completed).map(t => t.id));
+  state.todayTasks = state.todayTasks.filter(id => validIds.has(id));
+
+  const el   = document.getElementById('todayList');
+  const warn = document.getElementById('todayWarn');
+  const ids  = state.todayTasks;
+
+  if (!ids.length) {
+    el.innerHTML = `<div class="today-drop-zone">
+      ✨ 今日は余裕あり 🌸<br>
+      <small>進行中のタスクをここに<br>ドラッグして追加できます</small>
+    </div>`;
+    warn.style.display = 'none';
+    return;
+  }
+
+  warn.style.display = ids.length >= 6 ? 'flex' : 'none';
+
+  el.innerHTML = ids.map(id => {
+    const task = state.tasks.find(t => t.id === id);
+    if (!task) return '';
+    const prio = task.priority ? `<span class="today-prio">${PRIORITY_EMOJI[task.priority]}</span>` : '';
+    return `<div class="today-item" data-id="${task.id}" draggable="true">
+      <button class="today-check-btn" onclick="todayComplete(event,'${task.id}')" title="完了にする">
+        ${SVG_UNCHECKED}
+      </button>
+      ${prio}
+      <span class="today-task-name">${escHtml(task.title)}</span>
+      <span class="today-badge">本日対応中</span>
+      <button class="today-remove-btn" onclick="removeFromToday(event,'${task.id}')" title="進行中に戻す">✕</button>
+    </div>`;
+  }).filter(Boolean).join('');
+
+  // todayアイテムのドラッグ（並び替え用）
+  el.querySelectorAll('.today-item').forEach(item => {
+    item.addEventListener('dragstart', e => todayItemDragStart(e, item.dataset.id));
+    item.addEventListener('dragend',   () => todayItemDragEnd());
+    item.addEventListener('dragover',  e => todayItemDragOver(e, item.dataset.id));
+    item.addEventListener('drop',      e => todayItemDrop(e, item.dataset.id));
+  });
 }
 
 function restoreOpen(container, items) {
@@ -1566,6 +1877,8 @@ function handleCheck(event, id) {
 
   if (task.completed) {
     task.completedAt = new Date().toISOString();
+    // 本日のTODOからも除去
+    state.todayTasks = state.todayTasks.filter(x => x !== id);
     const f = makeFlower();
     lastFlowerId = f.id;
     state.flowers.push(f);
@@ -1620,7 +1933,6 @@ function revertTask(event, id) {
   task.completed   = false;
   task.completedAt = null;
 
-  // 対応する花を1輪取り除く
   if (state.flowers.length > 0) state.flowers.pop();
   lastFlowerId = null;
 
@@ -1659,16 +1971,20 @@ function confirmDelete() {
   if (item) {
     item.classList.add('deleting');
     setTimeout(() => {
-      state.tasks = state.tasks.filter(t => t.id !== id);
+      state.tasks      = state.tasks.filter(t => t.id !== id);
+      state.todayTasks = state.todayTasks.filter(x => x !== id);
       openTasks.delete(id);
       saveState();
+      renderTodayList();
       renderActive();
       renderHeader();
     }, 290);
   } else {
-    state.tasks = state.tasks.filter(t => t.id !== id);
+    state.tasks      = state.tasks.filter(t => t.id !== id);
+    state.todayTasks = state.todayTasks.filter(x => x !== id);
     openTasks.delete(id);
     saveState();
+    renderTodayList();
     renderActive();
     renderHeader();
   }
@@ -1732,6 +2048,159 @@ function doBundle(title) {
   showToast(`💐 ${bouquet.tasks.length} 個のタスクを達成！花束が完成しました 🎉`);
 }
 
+// =============================================================
+//  本日のTODO アクション
+// =============================================================
+
+// 本日のTODOから完了チェック
+function todayComplete(event, id) {
+  event.stopPropagation();
+  const task = state.tasks.find(t => t.id === id);
+  if (!task) return;
+  // todayTasksから除去
+  state.todayTasks = state.todayTasks.filter(x => x !== id);
+  task.completed  = true;
+  task.completedAt = new Date().toISOString();
+  const f = makeFlower();
+  lastFlowerId = f.id;
+  state.flowers.push(f);
+  saveState();
+  renderAll();
+  showToast('🌸 タスクを完了！花が1輪咲きました');
+}
+
+// 本日のTODOから進行中へ戻す
+function removeFromToday(event, id) {
+  event.stopPropagation();
+  state.todayTasks = state.todayTasks.filter(x => x !== id);
+  saveState();
+  renderTodayList();
+  renderActive();
+}
+
+// =============================================================
+//  D&D — 進行中タスク → 本日のTODO
+// =============================================================
+function activeDragStart(e, id) {
+  dragTaskId = id;
+  dragSource = 'active';
+  e.dataTransfer.effectAllowed = 'move';
+  // 少し遅らせてクラス付与（DnD中のスナップショット回避）
+  setTimeout(() => {
+    const item = document.querySelector(`#activeList .task-item[data-id="${id}"]`);
+    if (item) item.classList.add('is-dragging');
+  }, 0);
+}
+
+function activeDragEnd() {
+  dragTaskId = null;
+  dragSource = null;
+  document.querySelectorAll('.task-item.is-dragging').forEach(el => el.classList.remove('is-dragging'));
+}
+
+// 本日カード全体のdragover
+function todayDragOver(e) {
+  if (!dragTaskId) return;
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
+  document.getElementById('todayCard').classList.add('drag-over');
+}
+
+function todayDragLeave(e) {
+  // カード内の子要素への移動は無視
+  if (document.getElementById('todayCard').contains(e.relatedTarget)) return;
+  document.getElementById('todayCard').classList.remove('drag-over');
+}
+
+function todayDrop(e) {
+  e.preventDefault();
+  document.getElementById('todayCard').classList.remove('drag-over');
+  if (!dragTaskId || dragSource !== 'active') return;
+  const id = dragTaskId;
+  // まだ追加されていなければ追加
+  if (!state.todayTasks.includes(id)) {
+    state.todayTasks.push(id);
+    saveState();
+    renderTodayList();
+    renderActive();
+    showToast('📋 本日のTODOに追加しました');
+  }
+  dragTaskId = null;
+  dragSource = null;
+}
+
+// =============================================================
+//  D&D — 本日のTODO内の並び替え
+// =============================================================
+function todayItemDragStart(e, id) {
+  dragTaskId = id;
+  dragSource = 'today';
+  e.dataTransfer.effectAllowed = 'move';
+  setTimeout(() => {
+    const item = document.querySelector(`#todayList .today-item[data-id="${id}"]`);
+    if (item) item.classList.add('dragging');
+  }, 0);
+}
+
+function todayItemDragEnd() {
+  dragTaskId = null;
+  dragSource = null;
+  dragOverId = null;
+  document.querySelectorAll('.today-item.dragging').forEach(el => el.classList.remove('dragging'));
+  document.querySelectorAll('.today-item.drag-over-item').forEach(el => el.classList.remove('drag-over-item'));
+}
+
+function todayItemDragOver(e, targetId) {
+  if (dragSource !== 'today' || dragTaskId === targetId) return;
+  e.preventDefault();
+  e.stopPropagation(); // カード全体のdragoverを止める
+  e.dataTransfer.dropEffect = 'move';
+  if (dragOverId !== targetId) {
+    document.querySelectorAll('.today-item.drag-over-item').forEach(el => el.classList.remove('drag-over-item'));
+    dragOverId = targetId;
+    const item = document.querySelector(`#todayList .today-item[data-id="${targetId}"]`);
+    if (item) item.classList.add('drag-over-item');
+  }
+}
+
+function todayItemDrop(e, targetId) {
+  e.preventDefault();
+  e.stopPropagation();
+  if (dragSource !== 'today' || !dragTaskId || dragTaskId === targetId) return;
+  const fromIdx = state.todayTasks.indexOf(dragTaskId);
+  const toIdx   = state.todayTasks.indexOf(targetId);
+  if (fromIdx === -1 || toIdx === -1) return;
+  state.todayTasks.splice(fromIdx, 1);
+  state.todayTasks.splice(toIdx, 0, dragTaskId);
+  saveState();
+  renderTodayList();
+  dragTaskId = null;
+  dragSource = null;
+}
+
+// =============================================================
+//  日付変化チェック（ページロード時・毎分呼び出し）
+// =============================================================
+function todayStr() {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+
+function checkDateChange() {
+  const today = todayStr();
+  if (state.todayDate && state.todayDate !== today) {
+    // 日付が変わったら本日のTODOをクリア
+    state.todayTasks = [];
+    showToast('🌅 日付が変わりました。本日のTODOをリセットしました');
+  }
+  if (state.todayDate !== today) {
+    state.todayDate = today;
+    saveState();
+    renderTodayList();
+    renderActive();
+  }
+}
+
 function toggleBouquet(id) {
   const el = document.querySelector(`.bouquet-item[data-bid="${id}"]`);
   if (!el) return;
@@ -1751,7 +2220,10 @@ document.getElementById('bouquetTitleInput').addEventListener('keydown', e => {
 });
 
 loadState();
+checkDateChange();  // 日付チェック（todayDate 初期化も兼ねる）
 renderAll();
+// 毎分、日付変化をチェック
+setInterval(checkDateChange, 60000);
 </script>
 </body>
 </html>
