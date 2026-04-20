@@ -37,9 +37,9 @@
     }
 
     .app {
-      max-width: 820px;
+      max-width: 1280px;
       margin: 0 auto;
-      padding: 24px 16px 80px;
+      padding: 24px 24px 80px;
       position: relative;
       z-index: 1;
     }
@@ -987,7 +987,7 @@
     }
 
     .col-right {
-      width: 274px;
+      width: 330px;
       flex-shrink: 0;
     }
 
@@ -1076,30 +1076,13 @@
       gap: 4px;
     }
 
-    /* Today タスクアイテム */
+    /* Today タスクアイテム（ラッパー） */
     .today-item {
-      display: flex;
-      align-items: center;
-      padding: 9px 10px 9px 14px;
-      gap: 7px;
       border-bottom: 1px solid #fceef4;
-      cursor: grab;
-      transition: background 0.12s;
-      user-select: none;
       position: relative;
     }
 
     .today-item:last-child { border-bottom: none; }
-    .today-item:hover { background: #fff5f9; }
-
-    .today-item.drag-over-item {
-      border-top: 2.5px solid #e878a8;
-      background: #fff0f7;
-    }
-
-    .today-item.dragging {
-      opacity: 0.35;
-    }
 
     .today-task-name {
       flex: 1;
@@ -1188,6 +1171,105 @@
     }
 
     .task-row:hover .drag-hint { opacity: 1; }
+
+    /* =====================================================
+       TODAY ITEM — アコーディオン
+    ===================================================== */
+    .today-item-row {
+      display: flex;
+      align-items: center;
+      padding: 9px 10px 9px 14px;
+      gap: 7px;
+      cursor: pointer;
+      transition: background 0.12s;
+      user-select: none;
+    }
+
+    .today-item:hover .today-item-row { background: #fff5f9; }
+    .today-item.drag-over-item { border-top: 2.5px solid #e878a8; background: #fff0f7; }
+    .today-item.dragging { opacity: 0.35; }
+
+    .today-expand-btn {
+      width: 22px;
+      height: 22px;
+      flex-shrink: 0;
+      background: none;
+      border: none;
+      padding: 0;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #d8b0c8;
+      border-radius: 50%;
+      transition: color 0.18s, transform 0.22s, background 0.15s;
+    }
+
+    .today-expand-btn:hover { color: #e878a8; background: #fce8f2; }
+    .today-item.open .today-expand-btn { transform: rotate(180deg); color: #e878a8; }
+
+    .today-item-detail {
+      display: none;
+      padding: 6px 14px 14px 14px;
+      background: linear-gradient(180deg, #fff8fb 0%, #fff 100%);
+      border-top: 1px solid #fce8f2;
+    }
+
+    .today-item.open .today-item-detail { display: block; }
+
+    /* =====================================================
+       タイトル編集 INPUT
+    ===================================================== */
+    .title-edit-input {
+      width: 100%;
+      padding: 8px 13px;
+      border: 1.5px solid #f0d0e0;
+      border-radius: 10px;
+      font-size: 14px;
+      font-family: inherit;
+      color: #4a3a4a;
+      outline: none;
+      background: #fffafc;
+      font-weight: 600;
+      transition: border-color 0.18s, box-shadow 0.18s;
+    }
+
+    .title-edit-input:focus {
+      border-color: #e878a8;
+      box-shadow: 0 0 0 3px rgba(232,120,168,0.12);
+      background: #fff;
+    }
+
+    /* =====================================================
+       URL リンクプレビュー
+    ===================================================== */
+    .url-links {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+      margin-top: 5px;
+    }
+
+    .url-link-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 11px;
+      color: #5070d8;
+      background: #eef2ff;
+      border: 1px solid #ccd5f8;
+      border-radius: 20px;
+      padding: 3px 10px;
+      text-decoration: none;
+      word-break: break-all;
+      transition: background 0.15s, color 0.15s;
+      max-width: 100%;
+    }
+
+    .url-link-chip:hover {
+      background: #d8e0ff;
+      color: #3050c0;
+    }
   </style>
 </head>
 <body>
@@ -1378,9 +1460,10 @@ let state = {
   todayDate:  ''    // 'YYYY-MM-DD' — 日付変化検知用
 };
 
-const openTasks    = new Set(); // アコーディオン開閉状態（タスクID）
-const openBouquets = new Set(); // アコーディオン開閉状態（花束ID）
-let   lastFlowerId = null;      // 最後に追加した花のID（ポップアニメ用）
+const openTasks      = new Set(); // アコーディオン開閉状態（タスクID）
+const openBouquets   = new Set(); // アコーディオン開閉状態（花束ID）
+const openTodayItems = new Set(); // アコーディオン開閉状態（本日のTODO）
+let   lastFlowerId   = null;      // 最後に追加した花のID（ポップアニメ用）
 
 // =============================================================
 //  localStorage
@@ -1477,6 +1560,19 @@ function fmtDueDisplay(dateStr) {
   const parts = dateStr.split('-');
   if (parts.length !== 3) return '';
   return `${parseInt(parts[1])}/${parseInt(parts[2])}`;
+}
+
+// テキスト内のURLを抽出してクリッカブルなチップとして返す
+function extractLinks(text) {
+  if (!text) return '';
+  const matches = text.match(/https?:\/\/[^\s\]）)）]+/g);
+  if (!matches) return '';
+  const unique = [...new Set(matches)];
+  return unique.map(url => {
+    const display = url.length > 48 ? url.slice(0, 48) + '…' : url;
+    return `<a href="${escHtml(url)}" target="_blank" rel="noopener noreferrer"
+      class="url-link-chip" onclick="event.stopPropagation()">🔗 ${escHtml(display)}</a>`;
+  }).join('');
 }
 
 function getTodayCount() {
@@ -1624,6 +1720,12 @@ function taskHtml(task, done) {
         onclick="setPriority(event,'${task.id}','')">― なし</button>
     </div>` : '';
 
+  // タイトル編集（未完了のみ）
+  const titleEdit = !done ? `
+    <div class="detail-label">📌 タスク名</div>
+    <input type="text" class="title-edit-input" data-id="${task.id}"
+      value="${escHtml(task.title)}" maxlength="200" placeholder="タスク名…"/>` : '';
+
   return `<div class="task-item" data-id="${task.id}">
   <div class="task-row">
     <button class="check-btn" onclick="handleCheck(event,'${task.id}')"
@@ -1643,6 +1745,7 @@ function taskHtml(task, done) {
     </button>
   </div>
   <div class="task-detail">
+    ${titleEdit}
     ${prioSelector}
     <div class="detail-label">📅 期日</div>
     <input type="date" class="detail-date-input" data-id="${task.id}" data-field="dueDate"
@@ -1652,10 +1755,12 @@ function taskHtml(task, done) {
     <textarea class="detail-textarea" data-id="${task.id}" data-field="description"
       rows="3" placeholder="詳しい内容を書いておきましょう…"
       ${done ? 'readonly' : ''}>${escHtml(task.description || '')}</textarea>
+    <div class="url-links" data-links-id="${task.id}-desc">${extractLinks(task.description || '')}</div>
     <div class="detail-label">🗒 メモ</div>
     <textarea class="detail-textarea" data-id="${task.id}" data-field="memo"
       rows="2" placeholder="ちょっとしたメモも残せます…"
       ${done ? 'readonly' : ''}>${escHtml(task.memo || '')}</textarea>
+    <div class="url-links" data-links-id="${task.id}-memo">${extractLinks(task.memo || '')}</div>
     <div class="detail-meta">🕐 作成日時: ${fmtDateTime(task.createdAt)}</div>
   </div>
 </div>`;
@@ -1693,23 +1798,90 @@ function renderTodayList() {
     const task = state.tasks.find(t => t.id === id);
     if (!task) return '';
     const prio = task.priority ? `<span class="today-prio">${PRIORITY_EMOJI[task.priority]}</span>` : '';
-    return `<div class="today-item" data-id="${task.id}" draggable="true">
-      <button class="today-check-btn" onclick="todayComplete(event,'${task.id}')" title="完了にする">
-        ${SVG_UNCHECKED}
-      </button>
-      ${prio}
-      <span class="today-task-name">${escHtml(task.title)}</span>
-      <span class="today-badge">本日対応中</span>
-      <button class="today-remove-btn" onclick="removeFromToday(event,'${task.id}')" title="進行中に戻す">✕</button>
+    return `<div class="today-item" data-id="${task.id}">
+      <div class="today-item-row" draggable="true">
+        <button class="today-check-btn" onclick="todayComplete(event,'${task.id}')" title="完了にする">
+          ${SVG_UNCHECKED}
+        </button>
+        ${prio}
+        <span class="today-task-name">${escHtml(task.title)}</span>
+        <span class="today-badge">本日対応中</span>
+        <button class="today-remove-btn" onclick="removeFromToday(event,'${task.id}')" title="進行中に戻す">✕</button>
+        <button class="today-expand-btn" onclick="toggleTodayItem(event,'${task.id}')" title="詳細を開閉">
+          ${SVG_CHEVRON}
+        </button>
+      </div>
+      <div class="today-item-detail">
+        <div class="detail-label">⚡ 緊急度</div>
+        <div class="priority-selector">
+          <button class="priority-btn ${task.priority === 'high' ? 'act-high' : ''}"
+            onclick="setPriority(event,'${task.id}','high')">🔴 高</button>
+          <button class="priority-btn ${task.priority === 'mid' ? 'act-mid' : ''}"
+            onclick="setPriority(event,'${task.id}','mid')">🟡 中</button>
+          <button class="priority-btn ${task.priority === 'low' ? 'act-low' : ''}"
+            onclick="setPriority(event,'${task.id}','low')">🟢 低</button>
+          <button class="priority-btn ${!task.priority ? 'act-none' : ''}"
+            onclick="setPriority(event,'${task.id}','')">― なし</button>
+        </div>
+        <div class="detail-label">📅 期日</div>
+        <input type="date" class="detail-date-input" data-id="${task.id}" data-field="dueDate"
+          value="${escHtml(task.dueDate || '')}"/>
+        <div class="detail-label">📝 詳細説明</div>
+        <textarea class="detail-textarea" data-id="${task.id}" data-field="description"
+          rows="3" placeholder="詳しい内容を書いておきましょう…">${escHtml(task.description || '')}</textarea>
+        <div class="url-links" data-links-id="${task.id}-desc">${extractLinks(task.description || '')}</div>
+        <div class="detail-label">🗒 メモ</div>
+        <textarea class="detail-textarea" data-id="${task.id}" data-field="memo"
+          rows="2" placeholder="ちょっとしたメモも残せます…">${escHtml(task.memo || '')}</textarea>
+        <div class="url-links" data-links-id="${task.id}-memo">${extractLinks(task.memo || '')}</div>
+        <div class="detail-meta">🕐 作成日時: ${fmtDateTime(task.createdAt)}</div>
+      </div>
     </div>`;
   }).filter(Boolean).join('');
 
-  // todayアイテムのドラッグ（並び替え用）
+  // アコーディオン開閉状態を復元
   el.querySelectorAll('.today-item').forEach(item => {
-    item.addEventListener('dragstart', e => todayItemDragStart(e, item.dataset.id));
-    item.addEventListener('dragend',   () => todayItemDragEnd());
-    item.addEventListener('dragover',  e => todayItemDragOver(e, item.dataset.id));
-    item.addEventListener('drop',      e => todayItemDrop(e, item.dataset.id));
+    if (openTodayItems.has(item.dataset.id)) item.classList.add('open');
+  });
+
+  // イベント付与
+  el.querySelectorAll('.today-item').forEach(item => {
+    const row = item.querySelector('.today-item-row');
+    // 行クリックでアコーディオン（チェック・削除・展開ボタン以外）
+    row.addEventListener('click', e => {
+      if (e.target.closest('.today-check-btn') ||
+          e.target.closest('.today-remove-btn') ||
+          e.target.closest('.today-expand-btn')) return;
+      const id = item.dataset.id;
+      item.classList.toggle('open');
+      if (item.classList.contains('open')) openTodayItems.add(id);
+      else openTodayItems.delete(id);
+    });
+    // ドラッグ（並び替え用）— rowをdraggable
+    row.addEventListener('dragstart', e => todayItemDragStart(e, item.dataset.id));
+    row.addEventListener('dragend',   () => todayItemDragEnd());
+    item.addEventListener('dragover', e => todayItemDragOver(e, item.dataset.id));
+    item.addEventListener('drop',     e => todayItemDrop(e, item.dataset.id));
+
+    // 詳細内の自動保存
+    item.querySelectorAll('.detail-textarea').forEach(ta => {
+      ta.addEventListener('input', e => {
+        const task = state.tasks.find(t => t.id === e.target.dataset.id);
+        if (task) {
+          task[e.target.dataset.field] = e.target.value;
+          saveState();
+          const suffix = e.target.dataset.field === 'description' ? 'desc' : 'memo';
+          const linksEl = item.querySelector(`[data-links-id="${task.id}-${suffix}"]`);
+          if (linksEl) linksEl.innerHTML = extractLinks(e.target.value);
+        }
+      });
+    });
+    item.querySelectorAll('.detail-date-input').forEach(inp => {
+      inp.addEventListener('change', e => {
+        const task = state.tasks.find(t => t.id === e.target.dataset.id);
+        if (task) { task.dueDate = e.target.value; saveState(); }
+      });
+    });
   });
 }
 
@@ -1732,11 +1904,32 @@ function attachListeners(container, done) {
   });
   // 自動保存（進行中のみ）
   if (!done) {
+    // タイトル編集
+    container.querySelectorAll('.title-edit-input').forEach(inp => {
+      inp.addEventListener('input', e => {
+        const task = state.tasks.find(t => t.id === e.target.dataset.id);
+        if (task) {
+          task.title = e.target.value;
+          saveState();
+          // タスク行のタイトルスパンを即時更新（再レンダリングなし）
+          const nameEl = e.target.closest('.task-item')?.querySelector('.task-name');
+          if (nameEl) nameEl.textContent = e.target.value;
+        }
+      });
+    });
     // テキストエリア（説明・メモ）
     container.querySelectorAll('.detail-textarea').forEach(ta => {
       ta.addEventListener('input', e => {
         const task = state.tasks.find(t => t.id === e.target.dataset.id);
-        if (task) { task[e.target.dataset.field] = e.target.value; saveState(); }
+        if (task) {
+          task[e.target.dataset.field] = e.target.value;
+          saveState();
+          // URLリンクプレビューを即時更新
+          const suffix = e.target.dataset.field === 'description' ? 'desc' : 'memo';
+          const linksEl = e.target.closest('.task-detail')
+            ?.querySelector(`[data-links-id="${task.id}-${suffix}"]`);
+          if (linksEl) linksEl.innerHTML = extractLinks(e.target.value);
+        }
       });
     });
     // 期日入力
@@ -1900,6 +2093,16 @@ function toggleTask(event, id) {
   if (item) flipTask(item);
 }
 
+// 本日のTODO アコーディオン 開閉
+function toggleTodayItem(event, id) {
+  event.stopPropagation();
+  const item = document.querySelector(`#todayList .today-item[data-id="${id}"]`);
+  if (!item) return;
+  item.classList.toggle('open');
+  if (item.classList.contains('open')) openTodayItems.add(id);
+  else openTodayItems.delete(id);
+}
+
 // 緊急度を変更する
 function setPriority(event, id, priority) {
   event.stopPropagation();
@@ -1907,7 +2110,12 @@ function setPriority(event, id, priority) {
   if (!task) return;
   task.priority = priority;
   saveState();
-  renderActive(); // アコーディオン開閉状態は openTasks で維持される
+  // 本日のTODOにあるタスクの場合はそちらも再描画
+  if (state.todayTasks.includes(id)) {
+    renderTodayList();
+  } else {
+    renderActive();
+  }
 }
 
 // ソート切替
@@ -2136,8 +2344,13 @@ function todayItemDragStart(e, id) {
   dragTaskId = id;
   dragSource = 'today';
   e.dataTransfer.effectAllowed = 'move';
+  // ドラッグ開始時にアコーディオンを閉じる（レイアウト崩れ防止）
+  const item = document.querySelector(`#todayList .today-item[data-id="${id}"]`);
+  if (item) {
+    item.classList.remove('open');
+    openTodayItems.delete(id);
+  }
   setTimeout(() => {
-    const item = document.querySelector(`#todayList .today-item[data-id="${id}"]`);
     if (item) item.classList.add('dragging');
   }, 0);
 }
