@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Task Bouquet</title>
+  <title>Task Animals</title>
   <style>
     /* =====================================================
        RESET & BASE
@@ -973,6 +973,124 @@
     }
 
     /* =====================================================
+       追加フォーム — 拡張オプション
+    ===================================================== */
+    .add-options-row {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 6px;
+      margin-top: 10px;
+    }
+
+    .add-opt-label {
+      font-size: 11px;
+      font-weight: 700;
+      color: #c090a8;
+      white-space: nowrap;
+    }
+
+    .add-prio-btn {
+      padding: 4px 11px;
+      border: 1.5px solid #ead0e0;
+      border-radius: 20px;
+      background: #fff;
+      font-size: 12px;
+      font-family: inherit;
+      cursor: pointer;
+      color: #6a4a6a;
+      transition: all 0.15s;
+      line-height: 1.4;
+    }
+
+    .add-prio-btn:hover     { border-color: #d090b8; background: #fff5fa; }
+    .add-prio-btn.act-high  { background: #ffe8e8; border-color: #e07070; color: #b83030; font-weight: 700; }
+    .add-prio-btn.act-mid   { background: #fff8e0; border-color: #cca030; color: #7a5a00; font-weight: 700; }
+    .add-prio-btn.act-low   { background: #eaf5ea; border-color: #70aa70; color: #2a6a2a; font-weight: 700; }
+    .add-prio-btn.act-none  { background: #f0f0f0; border-color: #c0c0c0; color: #666;    font-weight: 700; }
+
+    .add-extra-toggle-btn {
+      font-size: 11px;
+      font-family: inherit;
+      font-weight: 600;
+      color: #b080a0;
+      background: #fce8f2;
+      border: 1px solid #f0c8dc;
+      border-radius: 20px;
+      padding: 4px 11px;
+      cursor: pointer;
+      white-space: nowrap;
+      margin-left: auto;
+      transition: all 0.15s;
+    }
+
+    .add-extra-toggle-btn:hover { background: #f8d8ea; color: #905070; }
+
+    .add-extra {
+      display: none;
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px solid #f5e0ea;
+    }
+
+    .add-extra.open { display: block; }
+
+    /* =====================================================
+       インライン追加
+    ===================================================== */
+    .inline-add-area {
+      border-top: 1px solid #fce8f2;
+    }
+
+    .inline-add-trigger {
+      padding: 10px 20px;
+      font-size: 12px;
+      font-weight: 600;
+      color: #d090b8;
+      cursor: pointer;
+      text-align: center;
+      transition: background 0.12s, color 0.12s;
+    }
+
+    .inline-add-trigger:hover {
+      background: #fff5f9;
+      color: #c05080;
+    }
+
+    .inline-add-form {
+      display: none;
+      border-top: 1px solid #fce8f2;
+      background: #fffafc;
+    }
+
+    .inline-add-form.open { display: block; }
+
+    .inline-add-inner {
+      display: flex;
+      gap: 8px;
+      padding: 10px 14px 8px;
+      align-items: center;
+    }
+
+    .inline-close-btn {
+      width: 28px;
+      height: 28px;
+      flex-shrink: 0;
+      background: none;
+      border: 1px solid #e8d0d8;
+      border-radius: 50%;
+      cursor: pointer;
+      font-size: 13px;
+      color: #c090a8;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.15s;
+    }
+
+    .inline-close-btn:hover { background: #fde8ee; color: #c84848; }
+
+    /* =====================================================
        2-COLUMN LAYOUT
     ===================================================== */
     .columns {
@@ -994,7 +1112,15 @@
     .today-sticky {
       position: sticky;
       top: 20px;
+      max-height: calc(100vh - 48px);
+      overflow-y: auto;
+      scrollbar-width: thin;
+      scrollbar-color: #f0cce0 transparent;
+      border-radius: 20px;
     }
+
+    .today-sticky::-webkit-scrollbar { width: 4px; }
+    .today-sticky::-webkit-scrollbar-thumb { background: #f0cce0; border-radius: 4px; }
 
     @media (max-width: 760px) {
       .columns { flex-direction: column; }
@@ -1277,10 +1403,10 @@
 
   <!-- ▼ ヘッダー（フル幅） -->
   <header class="header">
-    <div class="header-title">🌸 Task Bouquet</div>
+    <div class="header-title">🐾 Task Animals</div>
     <div class="header-right">
       <div class="today-chip">
-        ✨ 今日の完了：<strong id="todayCount">0</strong> タスク
+        🐾 今日の完了：<strong id="todayCount">0</strong> タスク
       </div>
     </div>
   </header>
@@ -1291,27 +1417,52 @@
     <!-- 左カラム：既存コンテンツ -->
     <div class="col-left">
 
-      <!-- ▼ 花畑エリア -->
+      <!-- ▼ 動物エリア -->
       <section class="garden-card">
         <div class="garden-head">
-          <div class="garden-label">🌿 いまの花畑</div>
-          <div class="garden-count" id="gardenCount">0 輪</div>
+          <div class="garden-label">🌿 今日の仲間たち</div>
+          <div class="garden-count" id="gardenCount">0 匹</div>
         </div>
         <div class="garden" id="flowerGarden">
           <div class="garden-empty">
-            まだ花が咲いていません 🌱<br>
-            <small>タスクを完了すると花が1輪咲きます</small>
+            まだ仲間がいません 🌿<br>
+            <small>タスクを完了すると仲間が1匹現れます</small>
           </div>
         </div>
       </section>
 
-      <!-- ▼ タスク追加 -->
+      <!-- ▼ タスク追加（拡張フォーム） -->
       <div class="add-form">
         <div class="add-form-label">✏️ 新しいタスク</div>
         <div class="add-form-row">
           <input type="text" id="newTitle" class="add-form-input"
             placeholder="やることを入力…" maxlength="200"/>
           <button class="btn-add" onclick="addTask()">＋ 追加</button>
+        </div>
+        <!-- 緊急度セレクター -->
+        <div class="add-options-row">
+          <span class="add-opt-label">緊急度：</span>
+          <button class="add-prio-btn" data-ap="" onclick="setNewPrio('')">― なし</button>
+          <button class="add-prio-btn" data-ap="high" onclick="setNewPrio('high')">🔴 高</button>
+          <button class="add-prio-btn" data-ap="mid"  onclick="setNewPrio('mid')">🟡 中</button>
+          <button class="add-prio-btn" data-ap="low"  onclick="setNewPrio('low')">🟢 低</button>
+          <button class="add-extra-toggle-btn" id="addExtraToggleBtn" onclick="toggleAddExtra()">
+            📅 期日・詳細 ▾
+          </button>
+        </div>
+        <!-- 期日・詳細（展開時のみ） -->
+        <div class="add-extra" id="addExtra">
+          <div style="display:flex; gap:12px; flex-wrap:wrap; align-items:flex-start;">
+            <div style="flex:1; min-width:140px;">
+              <div class="add-opt-label" style="margin-bottom:4px;">📅 期日（任意）</div>
+              <input type="date" id="newDueDate" class="detail-date-input" style="width:100%;"/>
+            </div>
+          </div>
+          <div style="margin-top:10px;">
+            <div class="add-opt-label" style="margin-bottom:4px;">📝 詳細説明（任意）</div>
+            <textarea id="newDescription" class="detail-textarea" rows="2"
+              placeholder="詳しい内容を書いておきましょう…"></textarea>
+          </div>
         </div>
       </div>
 
@@ -1325,6 +1476,27 @@
           <button class="sort-toggle-btn" id="sortToggleBtn" onclick="toggleSort()">優先度順 ↕</button>
         </div>
         <div id="activeList"></div>
+        <!-- インラインタスク追加 -->
+        <div class="inline-add-area">
+          <div class="inline-add-trigger" id="inlineAddTrigger" onclick="toggleInlineAdd()">
+            ＋ ここにタスクを追加
+          </div>
+          <div class="inline-add-form" id="inlineAddForm">
+            <div class="inline-add-inner">
+              <input type="text" id="inlineTitle" class="add-form-input"
+                placeholder="タスクを入力…" maxlength="200"/>
+              <button class="btn-add" style="padding:9px 16px; font-size:13px;" onclick="addTaskInline()">＋ 追加</button>
+              <button class="inline-close-btn" onclick="closeInlineAdd()">✕</button>
+            </div>
+            <div class="add-options-row" style="padding:0 14px 10px;">
+              <span class="add-opt-label">緊急度：</span>
+              <button class="add-prio-btn" data-ip="" onclick="setInlinePrio('')">― なし</button>
+              <button class="add-prio-btn" data-ip="high" onclick="setInlinePrio('high')">🔴 高</button>
+              <button class="add-prio-btn" data-ip="mid"  onclick="setInlinePrio('mid')">🟡 中</button>
+              <button class="add-prio-btn" data-ip="low"  onclick="setInlinePrio('low')">🟢 低</button>
+            </div>
+          </div>
+        </div>
       </div>
 
       <!-- ▼ 完了済みタスク -->
@@ -1335,17 +1507,17 @@
             <span class="count-badge" id="completedCount">0</span>
           </div>
           <button class="btn-bundle" id="bundleBtn" style="display:none;" onclick="showBundleModal()">
-            💐 花束にまとめる
+            🐾 まとめてログへ
           </button>
         </div>
         <div id="completedList"></div>
       </div>
 
-      <!-- ▼ 花束の記録 -->
+      <!-- ▼ Animals Log -->
       <div class="section-card">
         <div class="section-head bouquet-head">
           <div class="section-head-left">
-            <span class="section-head-title">🌷 花束の記録</span>
+            <span class="section-head-title">🐾 Animals Log</span>
             <span class="count-badge" id="bouquetCount">0</span>
           </div>
         </div>
@@ -1394,19 +1566,19 @@
 <!-- ▼ 花束タイトル入力モーダル -->
 <div class="modal-overlay" id="bundleModal" style="display:none;" onclick="overlayClick(event)">
   <div class="modal-box" onclick="event.stopPropagation()">
-    <span class="modal-emoji">💐</span>
-    <div class="modal-title">花束にまとめます</div>
+    <span class="modal-emoji">🐾</span>
+    <div class="modal-title">Animals Logにまとめます</div>
     <div class="modal-sub">タイトルをつけてください（省略可）</div>
     <input type="text" id="bouquetTitleInput" class="modal-input"
       placeholder="例：4月の成果、プロジェクト完了… " maxlength="50"/>
     <div>
       <div class="modal-flower-count">
-        🌸 <strong id="modalFlowerCount">0</strong> 輪の花束が完成します
+        🐾 <strong id="modalFlowerCount">0</strong> 匹がログに記録されます
       </div>
     </div>
     <div class="modal-actions">
       <button class="modal-cancel" onclick="hideBundleModal()">キャンセル</button>
-      <button class="modal-confirm" onclick="confirmBundle()">花束にする 💐</button>
+      <button class="modal-confirm" onclick="confirmBundle()">ログに残す 🐾</button>
     </div>
   </div>
 </div>
@@ -1418,8 +1590,10 @@
 // =============================================================
 //  定数
 // =============================================================
-const STORAGE_KEY  = 'taskBouquet_v1';
-const FLOWER_TYPES = ['🌸', '🌺', '🌼', '🌻', '🌷', '🌹', '🪷'];
+const STORAGE_KEY   = 'taskBouquet_v1'; // 互換性のため保持
+const ANIMAL_TYPES  = ['🐶','🐱','🐰','🐹','🦊','🐻','🐼','🐨','🐯','🦁',
+                       '🐮','🐷','🐸','🐙','🐧','🦆','🦉','🦋','🐢','🦔',
+                       '🦝','🦘','🐺','🦙','🦜','🐬','🦈','🐊','🦒','🦓'];
 
 // 緊急度
 const PRIORITY_EMOJI  = { high: '🔴', mid: '🟡', low: '🟢' };
@@ -1541,18 +1715,22 @@ function fmtDateTime(iso) {
   return `${fmtDate(iso)} ${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
 }
 
-function randFlower() {
-  return FLOWER_TYPES[Math.floor(Math.random() * FLOWER_TYPES.length)];
+function randAnimal() {
+  return ANIMAL_TYPES[Math.floor(Math.random() * ANIMAL_TYPES.length)];
 }
 
-function makeFlower() {
+function makeAnimal() {
   return {
     id:       uid(),
-    type:     randFlower(),
-    rotation: Math.round((Math.random() - 0.5) * 30),  // -15〜+15 度
-    offsetY:  Math.round((Math.random() - 0.5) * 12)   // -6〜+6 px
+    type:     randAnimal(),
+    rotation: Math.round((Math.random() - 0.5) * 20),
+    offsetY:  Math.round((Math.random() - 0.5) * 10)
   };
 }
+
+// 互換エイリアス（旧データ読み込み用）
+function randFlower() { return randAnimal(); }
+function makeFlower() { return makeAnimal(); }
 
 // 期日の表示フォーマット YYYY-MM-DD → M/D
 function fmtDueDisplay(dateStr) {
@@ -1619,12 +1797,12 @@ function renderGarden() {
   const countEl = document.getElementById('gardenCount');
   const flowers = state.flowers;
 
-  countEl.textContent = `${flowers.length} 輪`;
+  countEl.textContent = `${flowers.length} 匹`;
 
   if (flowers.length === 0) {
     el.innerHTML = `<div class="garden-empty">
-      まだ花が咲いていません 🌱<br>
-      <small>タスクを完了すると花が1輪咲きます</small>
+      まだ仲間がいません 🌿<br>
+      <small>タスクを完了すると仲間が1匹現れます</small>
     </div>`;
     return;
   }
@@ -1985,17 +2163,16 @@ function renderBouquets() {
   }
 
   listEl.innerHTML = list.map(b => {
-    const flowerDisplay = flowerTypesDisplay(b.flowers || []);
-    const taskCount     = (b.tasks || []).length;
-    // タイトル未入力ガード（旧データ対応）
+    const animalDisplay = animalTypesDisplay(b.flowers || []);
     const title = b.title || fmtDate(b.createdAt);
+    const animalCount = (b.flowers || []).length;
     return `<div class="bouquet-item" data-bid="${b.id}">
   <div class="bouquet-row" onclick="toggleBouquet('${b.id}')">
-    <div class="bouquet-main-icon">💐</div>
+    <div class="bouquet-main-icon">🐾</div>
     <div class="bouquet-info">
       <div class="bouquet-title">${escHtml(title)}</div>
       <div class="bouquet-sub-row">
-        <span class="bouquet-flower-types">${flowerDisplay}</span>
+        <span class="bouquet-flower-types">${animalDisplay}</span>
         <span class="bouquet-date">${fmtDate(b.createdAt)}</span>
       </div>
     </div>
@@ -2021,19 +2198,20 @@ function renderBouquets() {
   });
 }
 
-// 花束一覧用：省略あり（最大18輪、超えたら…）
-function flowerTypesDisplay(flowers) {
+// Animals Log 一覧用：省略あり（最大18匹）
+function animalTypesDisplay(flowers) {
   const MAX = 18;
   if (!flowers || flowers.length === 0) return '';
-  const types = flowers.map(f => f.type || '🌸');
+  const types = flowers.map(f => f.type || '🐾');
   if (types.length <= MAX) return types.join('');
   return types.slice(0, MAX).join('') + '…';
 }
+// 互換エイリアス
+function flowerTypesDisplay(f) { return animalTypesDisplay(f); }
 
-// 詳細ビュー用：全表示（旧関数を維持・互換）
 function flowerPreview(flowers) {
   const MAX  = 16;
-  const show = flowers.slice(0, MAX).map(f => f.type || '🌸').join('');
+  const show = flowers.slice(0, MAX).map(f => f.type || '🐾').join('');
   const rest = flowers.length > MAX
     ? `<span style="font-size:12px;color:#b07830"> +${flowers.length - MAX}</span>` : '';
   return show + rest;
@@ -2042,21 +2220,124 @@ function flowerPreview(flowers) {
 // =============================================================
 //  アクション
 // =============================================================
+// ── 新規タスク追加フォーム 拡張状態 ──
+let newTaskPriority = '';
+let addExtraOpen    = false;
+let inlineTaskPriority = '';
+
+function setNewPrio(p) {
+  newTaskPriority = p;
+  document.querySelectorAll('.add-prio-btn[data-ap]').forEach(btn => {
+    btn.className = 'add-prio-btn';
+    if (btn.dataset.ap === p) {
+      if (p === 'high') btn.classList.add('act-high');
+      else if (p === 'mid') btn.classList.add('act-mid');
+      else if (p === 'low') btn.classList.add('act-low');
+      else btn.classList.add('act-none');
+    }
+  });
+}
+
+function toggleAddExtra() {
+  addExtraOpen = !addExtraOpen;
+  const el = document.getElementById('addExtra');
+  const btn = document.getElementById('addExtraToggleBtn');
+  if (addExtraOpen) {
+    el.classList.add('open');
+    btn.textContent = '📅 期日・詳細 ▴';
+  } else {
+    el.classList.remove('open');
+    btn.textContent = '📅 期日・詳細 ▾';
+  }
+}
+
 function addTask() {
   const inp   = document.getElementById('newTitle');
   const title = inp.value.trim();
   if (!title) { inp.focus(); return; }
+
+  const dueDate     = document.getElementById('newDueDate')?.value || '';
+  const description = document.getElementById('newDescription')?.value.trim() || '';
+
   state.tasks.unshift({
     id: uid(), title,
-    description: '', memo: '',
-    dueDate: '',
-    priority: '',
+    description, memo: '',
+    dueDate,
+    priority: newTaskPriority,
     completed: false,
     createdAt: new Date().toISOString(),
     completedAt: null
   });
   saveState();
   inp.value = '';
+  const dueDateEl = document.getElementById('newDueDate');
+  if (dueDateEl) dueDateEl.value = '';
+  const descEl = document.getElementById('newDescription');
+  if (descEl) descEl.value = '';
+  // フォームリセット
+  setNewPrio('');
+  if (addExtraOpen) toggleAddExtra();
+
+  renderActive();
+  renderHeader();
+}
+
+// ── インライン追加 ──
+function toggleInlineAdd() {
+  const form    = document.getElementById('inlineAddForm');
+  const trigger = document.getElementById('inlineAddTrigger');
+  const isOpen  = form.classList.contains('open');
+  if (isOpen) {
+    closeInlineAdd();
+  } else {
+    form.classList.add('open');
+    trigger.style.display = 'none';
+    setTimeout(() => document.getElementById('inlineTitle')?.focus(), 60);
+  }
+}
+
+function closeInlineAdd() {
+  const form    = document.getElementById('inlineAddForm');
+  const trigger = document.getElementById('inlineAddTrigger');
+  if (form) form.classList.remove('open');
+  if (trigger) trigger.style.display = 'block';
+  const inp = document.getElementById('inlineTitle');
+  if (inp) inp.value = '';
+  inlineTaskPriority = '';
+  document.querySelectorAll('.add-prio-btn[data-ip]').forEach(b => {
+    b.className = 'add-prio-btn';
+    if (b.dataset.ip === '') b.classList.add('act-none');
+  });
+}
+
+function setInlinePrio(p) {
+  inlineTaskPriority = p;
+  document.querySelectorAll('.add-prio-btn[data-ip]').forEach(btn => {
+    btn.className = 'add-prio-btn';
+    if (btn.dataset.ip === p) {
+      if (p === 'high') btn.classList.add('act-high');
+      else if (p === 'mid') btn.classList.add('act-mid');
+      else if (p === 'low') btn.classList.add('act-low');
+      else btn.classList.add('act-none');
+    }
+  });
+}
+
+function addTaskInline() {
+  const inp   = document.getElementById('inlineTitle');
+  const title = inp?.value.trim();
+  if (!title) { inp?.focus(); return; }
+  state.tasks.unshift({
+    id: uid(), title,
+    description: '', memo: '',
+    dueDate: '',
+    priority: inlineTaskPriority,
+    completed: false,
+    createdAt: new Date().toISOString(),
+    completedAt: null
+  });
+  saveState();
+  closeInlineAdd();
   renderActive();
   renderHeader();
 }
@@ -2070,14 +2351,13 @@ function handleCheck(event, id) {
 
   if (task.completed) {
     task.completedAt = new Date().toISOString();
-    // 本日のTODOからも除去
     state.todayTasks = state.todayTasks.filter(x => x !== id);
-    const f = makeFlower();
+    const f = makeAnimal();
     lastFlowerId = f.id;
     state.flowers.push(f);
     saveState();
     renderAll();
-    showToast('🌸 タスクを完了！花が1輪咲きました');
+    showToast(`${f.type} タスクを完了！新しい仲間が現れました`);
   } else {
     task.completedAt = null;
     if (state.flowers.length > 0) state.flowers.pop();
@@ -2146,7 +2426,7 @@ function revertTask(event, id) {
 
   saveState();
   renderAll();
-  showToast('↩ タスクを進行中に戻しました');
+  showToast('↩ タスクを進行中に戻しました（仲間が1匹去りました）');
 }
 
 // ── タスク削除 ──
@@ -2253,7 +2533,7 @@ function doBundle(title) {
 
   saveState();
   renderAll();
-  showToast(`💐 ${bouquet.tasks.length} 個のタスクを達成！花束が完成しました 🎉`);
+  showToast(`🐾 ${bouquet.tasks.length} 個のタスクを達成！Animals Logに記録されました 🎉`);
 }
 
 // =============================================================
@@ -2269,12 +2549,12 @@ function todayComplete(event, id) {
   state.todayTasks = state.todayTasks.filter(x => x !== id);
   task.completed  = true;
   task.completedAt = new Date().toISOString();
-  const f = makeFlower();
+  const f = makeAnimal();
   lastFlowerId = f.id;
   state.flowers.push(f);
   saveState();
   renderAll();
-  showToast('🌸 タスクを完了！花が1輪咲きました');
+  showToast(`${f.type} タスクを完了！新しい仲間が現れました`);
 }
 
 // 本日のTODOから進行中へ戻す
@@ -2430,6 +2710,23 @@ function toggleBouquet(id) {
 document.getElementById('bouquetTitleInput').addEventListener('keydown', e => {
   if (e.key === 'Enter')  confirmBundle();
   if (e.key === 'Escape') hideBundleModal();
+});
+
+// インライン追加フォームのキー操作
+document.addEventListener('keydown', e => {
+  const inlineTitleEl = document.getElementById('inlineTitle');
+  if (document.activeElement === inlineTitleEl) {
+    if (e.key === 'Enter') { e.preventDefault(); addTaskInline(); }
+    if (e.key === 'Escape') closeInlineAdd();
+  }
+});
+
+// 追加フォームの「なし」ボタンを初期選択状態に
+document.addEventListener('DOMContentLoaded', () => {
+  const noneBtn = document.querySelector('.add-prio-btn[data-ap=""]');
+  if (noneBtn) noneBtn.classList.add('act-none');
+  const inlineNoneBtn = document.querySelector('.add-prio-btn[data-ip=""]');
+  if (inlineNoneBtn) inlineNoneBtn.classList.add('act-none');
 });
 
 loadState();
